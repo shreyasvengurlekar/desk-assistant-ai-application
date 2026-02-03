@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Desk Assistant AI</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #ffffff;
+      padding: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 8px 14px;
+      margin: 5px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .action-btn {
+      background: #2a2a2a;
+      color: white;
+    }
+
+    .approve {
+      background: green;
+      color: white;
+    }
+
+    .cancel {
+      background: red;
+      color: white;
+    }
+
+    .suggestion {
+      margin-top: 20px;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Desk Assistant AI</h2>
+
+<input id="userInput" placeholder="What would you like to do?" />
+
+<div>
+  <button class="action-btn" onclick="quickAction('Organize Downloads')">
+    Organize Downloads
+  </button>
+
+  <button class="action-btn" onclick="quickAction('Find Resume Files')">
+    Find Resume Files
+  </button>
+
+  <button class="action-btn" onclick="quickAction('Clean Desktop')">
+    Clean Desktop
+  </button>
+</div>
+
+<div class="suggestion">
+  <p><b>AI Suggestion:</b></p>
+  <p id="aiOutput">Waiting for your instruction...</p>
+</div>
+
+<button class="approve" onclick="approveAction()">Approve</button>
+<button class="cancel" onclick="cancelAction()">Cancel</button>
+
+<!-- JavaScript -->
+<script>
+  function quickAction(action) {
+    document.getElementById('aiOutput').innerText =
+      'You selected: ' + action + '. AI is analyzing...';
+  }
+
+  function approveAction() {
+    document.getElementById('aiOutput').innerText =
+      '✅ Approved. Action will be executed (logic coming soon).';
+  }
+
+  function cancelAction() {
+    document.getElementById('aiOutput').innerText =
+      '❌ Action cancelled. Nothing was changed.';
+  }
+</script>
+
+</body>
+</html>
