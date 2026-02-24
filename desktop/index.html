@@ -47,6 +47,47 @@
       padding: 15px;
       border-radius: 6px;
     }
+
+    .preview-card {
+  background: #141414;
+  border: 1px solid #2b2b2b;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.preview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #2a2a2a;
+}
+
+.path-old {
+  color: #ffb3b3;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.path-new {
+  color: #b9ffb9;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.small-note {
+  color: #bdbdbd;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
   </style>
 </head>
 
@@ -57,44 +98,298 @@
 <input id="userInput" placeholder="What would you like to do?" />
 
 <div>
-  <button class="action-btn" onclick="quickAction('Organize Downloads')">
-    Organize Downloads
-  </button>
+<button class="action-btn" onclick="quickAction('Organize my Downloads folder. Give folder suggestions and what will happen after I approve.')">
+  Organize Downloads </button>
 
-  <button class="action-btn" onclick="quickAction('Find Resume Files')">
-    Find Resume Files
-  </button>
+<button class="action-btn" onclick="quickAction('Organize my Desktop folder. Give folder suggestions and what will happen after I approve.')">
+  Organize Desktop </button>
 
-  <button class="action-btn" onclick="quickAction('Clean Desktop')">
-    Clean Desktop
-  </button>
+<button class="action-btn" onclick="quickAction('Organize my Downloads and Desktop together. Give a simple plan and mention nothing changes until I approve.')">
+  Organize Downloads + Desktop </button>
+
+<button class="action-btn" onclick="quickAction('Find Resume Files')">
+  Find Resume Files </button>
+
+<button class="action-btn" onclick="quickAction('Clean Desktop')">
+  Clean Desktop </button>
 </div>
 
 <div class="suggestion">
   <p><b>AI Suggestion:</b></p>
+
   <p id="aiOutput">Waiting for your instruction...</p>
+
+  <!-- Preview cards -->
+  <div id="previewList" style="margin-top:12px;"></div>
+
+  <!-- Progress bar (THIS WAS MISSING) -->
+  <div id="progressWrap" style="display:none; margin-top:14px;">
+    <div style="font-size:12px; color:#bdbdbd; margin-bottom:6px;">
+      <span id="progressText">Working...</span>
+    </div>
+
+    <div style="background:#2b2b2b; border-radius:999px; overflow:hidden; height:10px;">
+      <div id="progressBar"
+          style="width:0%; height:10px; background:#4A90E2;"></div>
+    </div>
+  </div>
 </div>
 
+
+<button id="undoBtn" class="action-btn" onclick="undoLast()" style="display:none;">↩️Undo</button>
 <button class="approve" onclick="approveAction()">Approve</button>
 <button class="cancel" onclick="cancelAction()">Cancel</button>
 
 <!-- JavaScript -->
+
 <script>
-  function quickAction(action) {
-    document.getElementById('aiOutput').innerText =
-      'You selected: ' + action + '. AI is analyzing...';
+  let currentPreview = [];
+
+  // Progress helpers
+  function showProgress(show) {
+    const wrap = document.getElementById("progressWrap");
+    if (!wrap) return;
+    wrap.style.display = show ? "block" : "none";
   }
 
-  function approveAction() {
-    document.getElementById('aiOutput').innerText =
-      '✅ Approved. Action will be executed (logic coming soon).';
+  function setProgress(pct, text) {
+    const bar = document.getElementById("progressBar");
+    const t = document.getElementById("progressText");
+    if (bar) bar.style.width = `${pct}%`;
+    if (t && text) t.innerText = text;
   }
 
+  function resetProgressSoon() {
+    setTimeout(() => {
+      showProgress(false);
+      setProgress(0, "Working...");
+    }, 800);
+  }
+
+  // Undo button helper
+  function setUndoVisible(isVisible) {
+    const btn = document.getElementById("undoBtn");
+    if (!btn) return;
+    btn.style.display = isVisible ? "inline-block" : "none";
+  }
+
+  // Preview UI helpers
+  function clearPreviewUI() {
+    const list = document.getElementById("previewList");
+    if (list) list.innerHTML = "";
+  }
+
+  function renderPreviewCards(preview) {
+    const list = document.getElementById("previewList");
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    const show = preview.slice(0, 10);
+
+    show.forEach((p, idx) => {
+      const fromName = p.from.split("\\").pop();
+      const toName = p.to.split("\\").pop();
+
+      const card = document.createElement("div");
+      card.className = "preview-card";
+
+      card.innerHTML = `
+        <div class="preview-top">
+          <div><b>${idx + 1}. Rename PDF</b></div>
+          <div class="badge">preview</div>
+        </div>
+        <div class="path-old">Old: ${fromName}</div>
+        <div class="path-new">New: ${toName}</div>
+        <div class="small-note">No changes will happen until you click Approve.</div>
+      `;
+
+      list.appendChild(card);
+    });
+
+    if (preview.length > 10) {
+      const more = document.createElement("div");
+      more.className = "small-note";
+      more.innerText = `+ ${preview.length - 10} more rename suggestions...`;
+      list.appendChild(more);
+    }
+  }
+
+
+function handlePreviewResponse(res) {
+  if (!res || res.error) {
+    document.getElementById("aiOutput").innerText =
+      "❌ Error generating preview.";
+    currentPreview = [];
+    return;
+  }
+
+  currentPreview = res.preview || [];
+
+  if (currentPreview.length === 0) {
+    document.getElementById("aiOutput").innerText =
+      "No rename suggestions found.";
+    return;
+  }
+
+  document.getElementById("aiOutput").innerText =
+    `Rename suggestions: ${currentPreview.length}`;
+
+  renderPreviewCards(currentPreview);
+}
+
+
+  // Button click → build preview
+async function quickAction(action) {
+  clearPreviewUI();
+  setUndoVisible(false);
+  showProgress(false);
+
+  document.getElementById("aiOutput").innerText =
+    `Processing: ${action}...`;
+
+  try {
+
+    if (action === "downloads") {
+      const res = await window.deskAI.previewDownloads();
+      handlePreviewResponse(res);
+      return;
+    }
+
+    if (action === "desktop") {
+      const res = await window.deskAI.previewDesktop();
+      handlePreviewResponse(res);
+      return;
+    }
+
+    if (action === "both") {
+      const res = await window.deskAI.previewBoth();
+      handlePreviewResponse(res);
+      return;
+    }
+
+    if (action === "resume") {
+      document.getElementById("aiOutput").innerText =
+        "Resume Finder feature coming next step.";
+      return;
+    }
+
+    if (action === "cleanDesktop") {
+      document.getElementById("aiOutput").innerText =
+        "Clean Desktop feature coming next step.";
+      return;
+    }
+
+    if (action === "large") {
+      document.getElementById("aiOutput").innerText =
+        "Find Large Files feature coming next step.";
+      return;
+    }
+
+    if (action === "old") {
+      document.getElementById("aiOutput").innerText =
+        "Find Old Files feature coming next step.";
+      return;
+    }
+
+    if (action === "duplicate") {
+      document.getElementById("aiOutput").innerText =
+        "Find Duplicate Files feature coming next step.";
+      return;
+    }
+
+  } catch (error) {
+    document.getElementById("aiOutput").innerText =
+      "❌ Error while processing action.";
+  }
+}
+
+  // Approve → apply renames
+  async function approveAction() {
+    if (!currentPreview || currentPreview.length === 0) {
+      document.getElementById("aiOutput").innerText =
+        "Nothing to approve.\n➡️ First click a button to generate rename suggestions.";
+      return;
+    }
+
+    clearPreviewUI();
+    showProgress(true);
+    setProgress(10, "Starting rename...");
+
+    try {
+      setProgress(30, "Renaming files...");
+      await new Promise(r => setTimeout(r, 200));
+
+      const res = await window.deskAI.applyRename(currentPreview);
+
+      if (res && res.error) {
+        setProgress(100, "Failed ❌");
+        document.getElementById("aiOutput").innerText = "❌ " + res.error;
+        resetProgressSoon();
+        return;
+      }
+
+      setProgress(80, "Finishing...");
+      await new Promise(r => setTimeout(r, 200));
+
+      const count = res.doneCount || 0;
+      setProgress(100, "Done ✅");
+
+      document.getElementById("aiOutput").innerText =
+        `✅ Rename completed. Renamed: ${count} PDF file(s).`;
+
+      currentPreview = [];
+      setUndoVisible(true);
+
+      resetProgressSoon();
+
+    } catch (error) {
+      setProgress(100, "Failed ❌");
+      document.getElementById("aiOutput").innerText = "❌ Rename apply failed.";
+      resetProgressSoon();
+    }
+  }
+
+  // Cancel → clear preview
   function cancelAction() {
-    document.getElementById('aiOutput').innerText =
-      '❌ Action cancelled. Nothing was changed.';
+    showProgress(false);
+    setProgress(0, "Working...");
+    currentPreview = [];
+    clearPreviewUI();
+    document.getElementById("aiOutput").innerText = "❌ Cancelled. No changes were made.";
+  }
+
+  // Undo → revert last rename
+  async function undoLast() {
+    showProgress(true);
+    setProgress(20, "Undoing...");
+    clearPreviewUI();
+    document.getElementById("aiOutput").innerText = "Undoing last rename...";
+
+    try {
+      const res = await window.deskAI.undoRename();
+
+      if (res && res.error) {
+        setProgress(100, "Failed ❌");
+        document.getElementById("aiOutput").innerText = "❌ " + res.error;
+        resetProgressSoon();
+        return;
+      }
+
+      setProgress(100, "Undo complete ✅");
+      document.getElementById("aiOutput").innerText = "↩️ " + res.message;
+
+      setUndoVisible(false);
+      resetProgressSoon();
+
+    } catch (error) {
+      setProgress(100, "Failed ❌");
+      document.getElementById("aiOutput").innerText = "❌ Undo failed.";
+      resetProgressSoon();
+    }
   }
 </script>
+
 
 </body>
 </html>
