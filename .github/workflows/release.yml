@@ -33,12 +33,12 @@ jobs:
       - name: Build installer (electron-builder)
         run: npm run dist
 
-      - name: Upload to GitHub Release
+      - name: Upload build files to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            desktop/dist/*.exe
-            desktop/dist/*.msi
-            desktop/dist/*.zip
+            desktop/dist/**/*.exe
+            desktop/dist/**/*.msi
+            desktop/dist/**/*.zip
             desktop/dist/latest.yml
             desktop/dist/*.blockmap
