@@ -18,7 +18,7 @@ https://deskassistantai.vercel.app
 
 Clone the repository
 
-git clone https://github.com/shreyasvengurlekar/desk-assistant-ai.git
+git clone https://github.com/shreyasvengurlekar/desk-assistant-ai-application.git
 
 Install dependencies
 
