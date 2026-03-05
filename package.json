@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "sqlite3": "^5.0.2"
-  },
-  "devDependencies": {
-    "electron-builder": "^26.8.1"
-  }
-}
