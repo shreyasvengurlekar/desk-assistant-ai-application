@@ -1,17 +1,38 @@
 {
-  "name": "desktop",
+  "name": "desk-assistant-ai",
   "version": "1.0.0",
-  "description": "",
+  "description": "Desk Assistant AI - File organizer with preview + approval + undo",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
-  },
-  "keywords": [],
   "author": "Shreyas Vengurlekar",
   "license": "ISC",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.shreyas.deskassistantai",
+    "productName": "Desk Assistant AI",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
   "devDependencies": {
-    "electron": "^40.1.0"
+    "electron": "^40.1.0",
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
     "@google/genai": "^1.39.0",
