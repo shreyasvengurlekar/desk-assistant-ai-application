@@ -1,4 +1,5 @@
 # Desk Assistant AI 🧠
+![Desk Assistant AI](assets/screenshot.png)
 
 Desk Assistant AI is a smart desktop assistant built using Electron that helps users manage tasks, search quickly, and interact with AI directly from their desktop.
 
