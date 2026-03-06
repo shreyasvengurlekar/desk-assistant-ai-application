@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Build installer (NSIS)
-        run: npm run dist
+        run: npx electron-builder --publish never
 
       - name: Upload installer to GitHub Release
         uses: softprops/action-gh-release@v2
