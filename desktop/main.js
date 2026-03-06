@@ -122,22 +122,20 @@ function createTray() {
 }
 
 // ---------- Auto Updater ----------
-autoUpdater.autoDownload = false;
-
-autoUpdater.on("error", (err) => {
-  console.log("AutoUpdater error:", err?.message || err);
+autoUpdater.on("checking-for-update", () => {
+  mainWindow.webContents.send("update:checking");
 });
 
-autoUpdater.on("update-available", () => {
-  console.log("Update available");
+autoUpdater.on("update-available", (info) => {
+  mainWindow.webContents.send("update:available", info);
 });
 
-autoUpdater.on("update-not-available", () => {
-  console.log("No update available");
+autoUpdater.on("download-progress", (progress) => {
+  mainWindow.webContents.send("update:progress", progress);
 });
 
 autoUpdater.on("update-downloaded", () => {
-  console.log("Update downloaded, ready to install");
+  mainWindow.webContents.send("update:ready");
 });
 
 // Menu (Help -> Check for Updates)

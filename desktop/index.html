@@ -1,33 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Desk Assistant AI</title>
 
   <style>
-    :root{
+    :root {
       --bg: #0b0f14;
-      --panel: rgba(255,255,255,0.06);
-      --panel2: rgba(255,255,255,0.08);
-      --border: rgba(255,255,255,0.10);
-      --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.65);
-      --muted2: rgba(255,255,255,0.45);
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel2: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.10);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.65);
+      --muted2: rgba(255, 255, 255, 0.45);
       --accent: #4A90E2;
       --good: #20c997;
       --bad: #ff4d4f;
-      --shadow: 0 20px 60px rgba(0,0,0,0.45);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
       --radius: 16px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(1200px 600px at 25% 10%, rgba(74,144,226,0.25), transparent 55%),
-                  radial-gradient(900px 500px at 85% 20%, rgba(32,201,151,0.18), transparent 55%),
-                  var(--bg);
+      background: radial-gradient(1200px 600px at 25% 10%, rgba(74, 144, 226, 0.25), transparent 55%),
+        radial-gradient(900px 500px at 85% 20%, rgba(32, 201, 151, 0.18), transparent 55%),
+        var(--bg);
       color: var(--text);
       height: 100vh;
       overflow: hidden;
@@ -70,12 +74,12 @@
       width: 38px;
       height: 38px;
       border-radius: 12px;
-      background: linear-gradient(135deg, rgba(74,144,226,1), rgba(32,201,151,1));
+      background: linear-gradient(135deg, rgba(74, 144, 226, 1), rgba(32, 201, 151, 1));
       display: grid;
       place-items: center;
       font-weight: 900;
       color: white;
-      box-shadow: 0 10px 25px rgba(74,144,226,0.25);
+      box-shadow: 0 10px 25px rgba(74, 144, 226, 0.25);
     }
 
     .brand h1 {
@@ -96,7 +100,7 @@
       gap: 8px;
       padding: 8px;
       border-radius: 14px;
-      background: rgba(0,0,0,0.14);
+      background: rgba(0, 0, 0, 0.14);
       border: 1px solid var(--border);
     }
 
@@ -113,8 +117,8 @@
     }
 
     .nav a.active {
-      background: rgba(74,144,226,0.18);
-      border: 1px solid rgba(74,144,226,0.25);
+      background: rgba(74, 144, 226, 0.18);
+      border: 1px solid rgba(74, 144, 226, 0.25);
     }
 
     .nav a span.icon {
@@ -126,7 +130,7 @@
       margin-top: auto;
       padding: 12px;
       border-radius: 14px;
-      background: rgba(0,0,0,0.14);
+      background: rgba(0, 0, 0, 0.14);
       border: 1px solid var(--border);
       display: flex;
       gap: 10px;
@@ -138,11 +142,19 @@
       height: 10px;
       border-radius: 999px;
       background: var(--good);
-      box-shadow: 0 0 0 6px rgba(32,201,151,0.10);
+      box-shadow: 0 0 0 6px rgba(32, 201, 151, 0.10);
     }
 
-    .sidebarCard .t1 { font-size: 13px; margin: 0; }
-    .sidebarCard .t2 { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+    .sidebarCard .t1 {
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .sidebarCard .t2 {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 2px 0 0;
+    }
 
     /* Center */
     .main {
@@ -158,7 +170,7 @@
       justify-content: space-between;
       padding: 10px 12px;
       border-radius: 14px;
-      background: rgba(0,0,0,0.14);
+      background: rgba(0, 0, 0, 0.14);
       border: 1px solid var(--border);
     }
 
@@ -180,7 +192,7 @@
 
     .iconBtn {
       border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text);
       border-radius: 12px;
       padding: 9px 10px;
@@ -194,7 +206,7 @@
       gap: 12px;
       padding: 14px;
       border-radius: 16px;
-      background: rgba(0,0,0,0.14);
+      background: rgba(0, 0, 0, 0.14);
       border: 1px solid var(--border);
       overflow: hidden;
     }
@@ -206,7 +218,7 @@
       align-items: center;
       padding: 16px;
       border-radius: 16px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border);
     }
 
@@ -214,16 +226,25 @@
       width: 120px;
       height: 120px;
       border-radius: 22px;
-      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), transparent 35%),
-                  linear-gradient(135deg, rgba(74,144,226,0.40), rgba(32,201,151,0.18));
-      border: 1px solid rgba(255,255,255,0.10);
+      background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22), transparent 35%),
+        linear-gradient(135deg, rgba(74, 144, 226, 0.40), rgba(32, 201, 151, 0.18));
+      border: 1px solid rgba(255, 255, 255, 0.10);
       display: grid;
       place-items: center;
       font-size: 42px;
     }
 
-    .hero h2 { margin: 0; font-size: 20px; }
-    .hero p { margin: 6px 0 0; color: var(--muted); line-height: 1.45; font-size: 13px; }
+    .hero h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .hero p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
 
     .quickRow {
       display: flex;
@@ -233,7 +254,7 @@
 
     .pillBtn {
       border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text);
       border-radius: 999px;
       padding: 10px 14px;
@@ -241,13 +262,16 @@
       font-size: 13px;
       transition: transform 0.05s ease;
     }
-    .pillBtn:active { transform: scale(0.98); }
+
+    .pillBtn:active {
+      transform: scale(0.98);
+    }
 
     /* Suggestion Area */
     .suggestionBox {
       padding: 14px;
       border-radius: 16px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border);
       overflow: auto;
     }
@@ -267,37 +291,42 @@
 
     /* Preview cards */
     .preview-card {
-      background: rgba(0,0,0,0.20);
+      background: rgba(0, 0, 0, 0.20);
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 12px;
       margin-top: 10px;
     }
+
     .preview-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 6px;
     }
+
     .badge {
       font-size: 12px;
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border);
       color: var(--muted);
     }
+
     .path-old {
       color: rgba(255, 170, 170, 0.95);
       font-size: 13px;
       word-break: break-word;
     }
+
     .path-new {
       color: rgba(170, 255, 210, 0.95);
       font-size: 13px;
       word-break: break-word;
       margin-top: 2px;
     }
+
     .small-note {
       color: var(--muted2);
       font-size: 12px;
@@ -311,7 +340,7 @@
       align-items: center;
       padding: 12px;
       border-radius: 16px;
-      background: rgba(0,0,0,0.14);
+      background: rgba(0, 0, 0, 0.14);
       border: 1px solid var(--border);
     }
 
@@ -321,14 +350,14 @@
       border-radius: 14px;
       border: 1px solid var(--border);
       outline: none;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text);
       font-size: 14px;
     }
 
     .primaryBtn {
-      border: 1px solid rgba(74,144,226,0.35);
-      background: rgba(74,144,226,0.22);
+      border: 1px solid rgba(74, 144, 226, 0.35);
+      background: rgba(74, 144, 226, 0.22);
       color: var(--text);
       border-radius: 14px;
       padding: 12px 14px;
@@ -338,8 +367,8 @@
     }
 
     .dangerBtn {
-      border: 1px solid rgba(255,77,79,0.35);
-      background: rgba(255,77,79,0.18);
+      border: 1px solid rgba(255, 77, 79, 0.35);
+      background: rgba(255, 77, 79, 0.18);
       color: var(--text);
       border-radius: 14px;
       padding: 12px 14px;
@@ -361,6 +390,7 @@
       align-items: center;
       justify-content: space-between;
     }
+
     .rightHeader h3 {
       margin: 0;
       font-size: 14px;
@@ -371,7 +401,7 @@
     .fileCard {
       padding: 14px;
       border-radius: 16px;
-      background: rgba(0,0,0,0.14);
+      background: rgba(0, 0, 0, 0.14);
       border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
@@ -389,7 +419,7 @@
       width: 42px;
       height: 42px;
       border-radius: 14px;
-      background: rgba(255,255,255,0.07);
+      background: rgba(255, 255, 255, 0.07);
       border: 1px solid var(--border);
       display: grid;
       place-items: center;
@@ -412,8 +442,8 @@
     .filePreview {
       flex: 1;
       border-radius: 14px;
-      background: rgba(255,255,255,0.05);
-      border: 1px dashed rgba(255,255,255,0.18);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px dashed rgba(255, 255, 255, 0.18);
       display: grid;
       place-items: center;
       color: var(--muted2);
@@ -427,19 +457,22 @@
       margin-top: 14px;
       display: none;
     }
+
     #progressText {
       font-size: 12px;
       color: var(--muted);
       display: inline-block;
       margin-bottom: 6px;
     }
+
     .progressTrack {
-      background: rgba(255,255,255,0.10);
+      background: rgba(255, 255, 255, 0.10);
       border-radius: 999px;
       overflow: hidden;
       height: 10px;
       border: 1px solid var(--border);
     }
+
     #progressBar {
       width: 0%;
       height: 10px;
@@ -460,67 +493,91 @@
         grid-template-columns: 240px 1fr;
         grid-template-rows: auto auto;
       }
-      .right { display: none; }
-    }
-  
-    /* Footer */
-  .app-footer{
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 14px;
-    background: rgba(255,255,255,0.9);
-    border-top: 1px solid rgba(0,0,0,0.08);
-    backdrop-filter: blur(10px);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    z-index: 9999;
-  }
-  .footer-left,.footer-center,.footer-right{
-    display:flex; align-items:center; gap:10px;
-  }
-  .footer-appname{
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .footer-version{
-    font-size: 12px;
-    color: rgba(0,0,0,0.65);
-  }
-  .footer-btn{
-    border: 1px solid rgba(0,0,0,0.15);
-    background: white;
-    padding: 6px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-  }
-  .footer-btn:disabled{
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  .footer-status{
-    font-size: 12px;
-    color: rgba(0,0,0,0.65);
-    min-width: 140px;
-    text-align: right;
-  }
 
-  .app-footer{
-  background: transparent;
-}
-  /* IMPORTANT: prevent footer covering your UI */
-  body { padding-bottom: 52px; }
-</style>
+      .right {
+        display: none;
+      }
+    }
+
+    /* Footer */
+    .app-footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: rgba(255, 255, 255, 0.9);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(10px);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      z-index: 9999;
+    }
+
+    .footer-left,
+    .footer-center,
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-appname {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .footer-version {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.65);
+    }
+
+    .footer-btn {
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      background: white;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .footer-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .footer-status {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.65);
+      min-width: 140px;
+      text-align: right;
+    }
+
+    .app-footer {
+      background: transparent;
+    }
+
+    /* IMPORTANT: prevent footer covering your UI */
+    body {
+      padding-bottom: 52px;
+    }
+  </style>
 
 
 </head>
 
 <body>
+
+  <div id="updatePanel" style="display:none">
+    <h3>Update Available</h3>
+    <p id="updateStatus"></p>
+    <progress id="updateProgress" value="0" max="100"></progress>
+    <button id="restartApp">Restart to Update</button>
+  </div>
+
   <div class="app">
 
     <!-- Sidebar -->
@@ -630,8 +687,8 @@
           <div>
             <p class="fileName">Sample_Document.pdf</p>
             <div class="meta">
-              Date modified: —<br/>
-              Size: —<br/>
+              Date modified: —<br />
+              Size: —<br />
               Location: —
             </div>
           </div>
@@ -648,63 +705,63 @@
 
   </div>
 
-<!-- JavaScript -->
+  <!-- JavaScript -->
 
-<script>
-  const { app } = require("electron");
-  document.getElementById("version").innerText = app.getVersion();
-  let currentPreview = [];
+  <script>
+    const { app } = require("electron");
+    document.getElementById("version").innerText = app.getVersion();
+    let currentPreview = [];
 
-  // Progress helpers
-  function showProgress(show) {
-    const wrap = document.getElementById("progressWrap");
-    if (!wrap) return;
-    wrap.style.display = show ? "block" : "none";
-  }
+    // Progress helpers
+    function showProgress(show) {
+      const wrap = document.getElementById("progressWrap");
+      if (!wrap) return;
+      wrap.style.display = show ? "block" : "none";
+    }
 
-  function setProgress(pct, text) {
-    const bar = document.getElementById("progressBar");
-    const t = document.getElementById("progressText");
-    if (bar) bar.style.width = `${pct}%`;
-    if (t && text) t.innerText = text;
-  }
+    function setProgress(pct, text) {
+      const bar = document.getElementById("progressBar");
+      const t = document.getElementById("progressText");
+      if (bar) bar.style.width = `${pct}%`;
+      if (t && text) t.innerText = text;
+    }
 
-  function resetProgressSoon() {
-    setTimeout(() => {
-      showProgress(false);
-      setProgress(0, "Working...");
-    }, 800);
-  }
+    function resetProgressSoon() {
+      setTimeout(() => {
+        showProgress(false);
+        setProgress(0, "Working...");
+      }, 800);
+    }
 
-  // Undo button helper
-  function setUndoVisible(isVisible) {
-    const btn = document.getElementById("undoBtn");
-    if (!btn) return;
-    btn.style.display = isVisible ? "inline-block" : "none";
-  }
+    // Undo button helper
+    function setUndoVisible(isVisible) {
+      const btn = document.getElementById("undoBtn");
+      if (!btn) return;
+      btn.style.display = isVisible ? "inline-block" : "none";
+    }
 
-  // Preview UI helpers
-  function clearPreviewUI() {
-    const list = document.getElementById("previewList");
-    if (list) list.innerHTML = "";
-  }
+    // Preview UI helpers
+    function clearPreviewUI() {
+      const list = document.getElementById("previewList");
+      if (list) list.innerHTML = "";
+    }
 
-  function renderPreviewCards(preview) {
-    const list = document.getElementById("previewList");
-    if (!list) return;
+    function renderPreviewCards(preview) {
+      const list = document.getElementById("previewList");
+      if (!list) return;
 
-    list.innerHTML = "";
+      list.innerHTML = "";
 
-    const show = preview.slice(0, 10);
+      const show = preview.slice(0, 10);
 
-    show.forEach((p, idx) => {
-      const fromName = p.from.split("\\").pop();
-      const toName = p.to.split("\\").pop();
+      show.forEach((p, idx) => {
+        const fromName = p.from.split("\\").pop();
+        const toName = p.to.split("\\").pop();
 
-      const card = document.createElement("div");
-      card.className = "preview-card";
+        const card = document.createElement("div");
+        card.className = "preview-card";
 
-      card.innerHTML = `
+        card.innerHTML = `
         <div class="preview-top">
           <div><b>${idx + 1}. Rename PDF</b></div>
           <div class="badge">preview</div>
@@ -714,209 +771,210 @@
         <div class="small-note">No changes will happen until you click Approve.</div>
       `;
 
-      list.appendChild(card);
-    });
+        list.appendChild(card);
+      });
 
-    if (preview.length > 10) {
-      const more = document.createElement("div");
-      more.className = "small-note";
-      more.innerText = `+ ${preview.length - 10} more rename suggestions...`;
-      list.appendChild(more);
-    }
-  }
-
-
-function handlePreviewResponse(res) {
-  if (!res || res.error) {
-    document.getElementById("aiOutput").innerText =
-      "❌ Error generating preview.";
-    currentPreview = [];
-    return;
-  }
-
-  currentPreview = res.preview || [];
-
-  if (currentPreview.length === 0) {
-    document.getElementById("aiOutput").innerText =
-      "No rename suggestions found.";
-    return;
-  }
-
-  document.getElementById("aiOutput").innerText =
-    `Rename suggestions: ${currentPreview.length}`;
-
-  renderPreviewCards(currentPreview);
-}
-
-
-  // Button click → build preview
-async function quickAction(action) {
-  clearPreviewUI();
-  setUndoVisible(false);
-  showProgress(false);
-
-  document.getElementById("aiOutput").innerText =
-    `Processing: ${action}...`;
-
-  try {
-
-    if (action === "downloads") {
-      const res = await window.deskAI.previewDownloads();
-      handlePreviewResponse(res);
-      return;
+      if (preview.length > 10) {
+        const more = document.createElement("div");
+        more.className = "small-note";
+        more.innerText = `+ ${preview.length - 10} more rename suggestions...`;
+        list.appendChild(more);
+      }
     }
 
-    if (action === "desktop") {
-      const res = await window.deskAI.previewDesktop();
-      handlePreviewResponse(res);
-      return;
-    }
 
-    if (action === "both") {
-      const res = await window.deskAI.previewBoth();
-      handlePreviewResponse(res);
-      return;
-    }
-
-    if (action === "resume") {
-      document.getElementById("aiOutput").innerText =
-        "Resume Finder feature coming next step.";
-      return;
-    }
-
-    if (action === "cleanDesktop") {
-      document.getElementById("aiOutput").innerText =
-        "Clean Desktop feature coming next step.";
-      return;
-    }
-
-    if (action === "large") {
-      document.getElementById("aiOutput").innerText =
-        "Find Large Files feature coming next step.";
-      return;
-    }
-
-    if (action === "old") {
-      document.getElementById("aiOutput").innerText =
-        "Find Old Files feature coming next step.";
-      return;
-    }
-
-    if (action === "duplicate") {
-      document.getElementById("aiOutput").innerText =
-        "Find Duplicate Files feature coming next step.";
-      return;
-    }
-
-  } catch (error) {
-    document.getElementById("aiOutput").innerText =
-      "❌ Error while processing action.";
-  }
-}
-
-  // Approve → apply renames
-  async function approveAction() {
-    if (!currentPreview || currentPreview.length === 0) {
-      document.getElementById("aiOutput").innerText =
-        "Nothing to approve.\n➡️ First click a button to generate rename suggestions.";
-      return;
-    }
-
-    clearPreviewUI();
-    showProgress(true);
-    setProgress(10, "Starting rename...");
-
-    try {
-      setProgress(30, "Renaming files...");
-      await new Promise(r => setTimeout(r, 200));
-
-      const res = await window.deskAI.applyRename(currentPreview);
-
-      if (res && res.error) {
-        setProgress(100, "Failed ❌");
-        document.getElementById("aiOutput").innerText = "❌ " + res.error;
-        resetProgressSoon();
+    function handlePreviewResponse(res) {
+      if (!res || res.error) {
+        document.getElementById("aiOutput").innerText =
+          "❌ Error generating preview.";
+        currentPreview = [];
         return;
       }
 
-      setProgress(80, "Finishing...");
-      await new Promise(r => setTimeout(r, 200));
+      currentPreview = res.preview || [];
 
-      const count = res.doneCount || 0;
-      setProgress(100, "Done ✅");
-
-      document.getElementById("aiOutput").innerText =
-        `✅ Rename completed. Renamed: ${count} PDF file(s).`;
-
-      currentPreview = [];
-      setUndoVisible(true);
-
-      resetProgressSoon();
-
-    } catch (error) {
-      setProgress(100, "Failed ❌");
-      document.getElementById("aiOutput").innerText = "❌ Rename apply failed.";
-      resetProgressSoon();
-    }
-  }
-
-  // Cancel → clear preview
-  function cancelAction() {
-    showProgress(false);
-    setProgress(0, "Working...");
-    currentPreview = [];
-    clearPreviewUI();
-    document.getElementById("aiOutput").innerText = "❌ Cancelled. No changes were made.";
-  }
-
-  // Undo → revert last rename
-  async function undoLast() {
-    showProgress(true);
-    setProgress(20, "Undoing...");
-    clearPreviewUI();
-    document.getElementById("aiOutput").innerText = "Undoing last rename...";
-
-    try {
-      const res = await window.deskAI.undoRename();
-
-      if (res && res.error) {
-        setProgress(100, "Failed ❌");
-        document.getElementById("aiOutput").innerText = "❌ " + res.error;
-        resetProgressSoon();
+      if (currentPreview.length === 0) {
+        document.getElementById("aiOutput").innerText =
+          "No rename suggestions found.";
         return;
       }
 
-      setProgress(100, "Undo complete ✅");
-      document.getElementById("aiOutput").innerText = "↩️ " + res.message;
+      document.getElementById("aiOutput").innerText =
+        `Rename suggestions: ${currentPreview.length}`;
 
+      renderPreviewCards(currentPreview);
+    }
+
+
+    // Button click → build preview
+    async function quickAction(action) {
+      clearPreviewUI();
       setUndoVisible(false);
-      resetProgressSoon();
+      showProgress(false);
 
-    } catch (error) {
-      setProgress(100, "Failed ❌");
-      document.getElementById("aiOutput").innerText = "❌ Undo failed.";
-      resetProgressSoon();
+      document.getElementById("aiOutput").innerText =
+        `Processing: ${action}...`;
+
+      try {
+
+        if (action === "downloads") {
+          const res = await window.deskAI.previewDownloads();
+          handlePreviewResponse(res);
+          return;
+        }
+
+        if (action === "desktop") {
+          const res = await window.deskAI.previewDesktop();
+          handlePreviewResponse(res);
+          return;
+        }
+
+        if (action === "both") {
+          const res = await window.deskAI.previewBoth();
+          handlePreviewResponse(res);
+          return;
+        }
+
+        if (action === "resume") {
+          document.getElementById("aiOutput").innerText =
+            "Resume Finder feature coming next step.";
+          return;
+        }
+
+        if (action === "cleanDesktop") {
+          document.getElementById("aiOutput").innerText =
+            "Clean Desktop feature coming next step.";
+          return;
+        }
+
+        if (action === "large") {
+          document.getElementById("aiOutput").innerText =
+            "Find Large Files feature coming next step.";
+          return;
+        }
+
+        if (action === "old") {
+          document.getElementById("aiOutput").innerText =
+            "Find Old Files feature coming next step.";
+          return;
+        }
+
+        if (action === "duplicate") {
+          document.getElementById("aiOutput").innerText =
+            "Find Duplicate Files feature coming next step.";
+          return;
+        }
+
+      } catch (error) {
+        document.getElementById("aiOutput").innerText =
+          "❌ Error while processing action.";
+      }
     }
-  }
-</script>
 
-<script type="module" src="./index.js"></script>
-<!-- Footer -->
-<div id="appFooter" class="app-footer">
-  <div class="footer-left">
-    <span class="footer-appname">Desk Assistant AI</span>
-  </div>
+    // Approve → apply renames
+    async function approveAction() {
+      if (!currentPreview || currentPreview.length === 0) {
+        document.getElementById("aiOutput").innerText =
+          "Nothing to approve.\n➡️ First click a button to generate rename suggestions.";
+        return;
+      }
 
-  <div class="footer-center">
-    <span id="footerVersion" class="footer-version">v—</span>
-  </div>
+      clearPreviewUI();
+      showProgress(true);
+      setProgress(10, "Starting rename...");
 
-  <div class="footer-right">
-    <button id="footerUpdateBtn" class="footer-btn">Check for Updates</button>
-    <span id="footerUpdateStatus" class="footer-status"></span>
+      try {
+        setProgress(30, "Renaming files...");
+        await new Promise(r => setTimeout(r, 200));
+
+        const res = await window.deskAI.applyRename(currentPreview);
+
+        if (res && res.error) {
+          setProgress(100, "Failed ❌");
+          document.getElementById("aiOutput").innerText = "❌ " + res.error;
+          resetProgressSoon();
+          return;
+        }
+
+        setProgress(80, "Finishing...");
+        await new Promise(r => setTimeout(r, 200));
+
+        const count = res.doneCount || 0;
+        setProgress(100, "Done ✅");
+
+        document.getElementById("aiOutput").innerText =
+          `✅ Rename completed. Renamed: ${count} PDF file(s).`;
+
+        currentPreview = [];
+        setUndoVisible(true);
+
+        resetProgressSoon();
+
+      } catch (error) {
+        setProgress(100, "Failed ❌");
+        document.getElementById("aiOutput").innerText = "❌ Rename apply failed.";
+        resetProgressSoon();
+      }
+    }
+
+    // Cancel → clear preview
+    function cancelAction() {
+      showProgress(false);
+      setProgress(0, "Working...");
+      currentPreview = [];
+      clearPreviewUI();
+      document.getElementById("aiOutput").innerText = "❌ Cancelled. No changes were made.";
+    }
+
+    // Undo → revert last rename
+    async function undoLast() {
+      showProgress(true);
+      setProgress(20, "Undoing...");
+      clearPreviewUI();
+      document.getElementById("aiOutput").innerText = "Undoing last rename...";
+
+      try {
+        const res = await window.deskAI.undoRename();
+
+        if (res && res.error) {
+          setProgress(100, "Failed ❌");
+          document.getElementById("aiOutput").innerText = "❌ " + res.error;
+          resetProgressSoon();
+          return;
+        }
+
+        setProgress(100, "Undo complete ✅");
+        document.getElementById("aiOutput").innerText = "↩️ " + res.message;
+
+        setUndoVisible(false);
+        resetProgressSoon();
+
+      } catch (error) {
+        setProgress(100, "Failed ❌");
+        document.getElementById("aiOutput").innerText = "❌ Undo failed.";
+        resetProgressSoon();
+      }
+    }
+  </script>
+
+  <script type="module" src="./index.js"></script>
+  <!-- Footer -->
+  <div id="appFooter" class="app-footer">
+    <div class="footer-left">
+      <span class="footer-appname">Desk Assistant AI</span>
+    </div>
+
+    <div class="footer-center">
+      <span id="footerVersion" class="footer-version">v—</span>
+    </div>
+
+    <div class="footer-right">
+      <button id="footerUpdateBtn" class="footer-btn">Check for Updates</button>
+      <span id="footerUpdateStatus" class="footer-status"></span>
+    </div>
   </div>
-</div>
 
 </body>
 <div id="version" style="font-size:12px; color:gray; margin-top:10px;"></div>
+
 </html>

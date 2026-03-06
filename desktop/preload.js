@@ -29,15 +29,11 @@ contextBridge.exposeInMainWorld("deskAI", {
 
 
 /* -------- App Updater API -------- */
-
-contextBridge.exposeInMainWorld("updater", {
-
-  check: () => ipcRenderer.invoke("update:check"),
-
-  download: () => ipcRenderer.invoke("update:download"),
-
-  install: () => ipcRenderer.invoke("update:install")
-
+contextBridge.exposeInMainWorld("updateEvents", {
+  onChecking: (callback) => ipcRenderer.on("update:checking", callback),
+  onAvailable: (callback) => ipcRenderer.on("update:available", callback),
+  onProgress: (callback) => ipcRenderer.on("update:progress", callback),
+  onReady: (callback) => ipcRenderer.on("update:ready", callback),
 });
 
 contextBridge.exposeInMainWorld("appInfo", {
