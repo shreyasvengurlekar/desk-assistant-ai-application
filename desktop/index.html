@@ -1,148 +1,658 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Desk Assistant AI</title>
 
   <style>
+    :root{
+      --bg: #0b0f14;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.65);
+      --muted2: rgba(255,255,255,0.45);
+      --accent: #4A90E2;
+      --good: #20c997;
+      --bad: #ff4d4f;
+      --shadow: 0 20px 60px rgba(0,0,0,0.45);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: #ffffff;
-      padding: 20px;
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 600px at 25% 10%, rgba(74,144,226,0.25), transparent 55%),
+                  radial-gradient(900px 500px at 85% 20%, rgba(32,201,151,0.18), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
     }
 
-    input {
-      width: 100%;
-      padding: 10px;
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr 340px;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .glass {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 240px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 10px;
+    }
+
+    .logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(74,144,226,1), rgba(32,201,151,1));
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: white;
+      box-shadow: 0 10px 25px rgba(74,144,226,0.25);
+    }
+
+    .brand h1 {
       font-size: 16px;
-      margin-bottom: 10px;
+      margin: 0;
+      line-height: 1.1;
     }
 
-    button {
-      padding: 8px 14px;
-      margin: 5px;
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid var(--border);
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 14px;
       cursor: pointer;
-      border: none;
-      border-radius: 4px;
     }
 
-    .action-btn {
-      background: #2a2a2a;
-      color: white;
+    .nav a.active {
+      background: rgba(74,144,226,0.18);
+      border: 1px solid rgba(74,144,226,0.25);
     }
 
-    .approve {
-      background: green;
-      color: white;
+    .nav a span.icon {
+      width: 18px;
+      opacity: 0.9;
     }
 
-    .cancel {
-      background: red;
-      color: white;
+    .sidebarCard {
+      margin-top: auto;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
 
-    .suggestion {
-      margin-top: 20px;
-      background: #1e1e1e;
-      padding: 15px;
-      border-radius: 6px;
+    .badgeDot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--good);
+      box-shadow: 0 0 0 6px rgba(32,201,151,0.10);
     }
 
+    .sidebarCard .t1 { font-size: 13px; margin: 0; }
+    .sidebarCard .t2 { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+
+    /* Center */
+    .main {
+      padding: 14px;
+      display: grid;
+      grid-template-rows: 54px 1fr 74px;
+      gap: 12px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid var(--border);
+    }
+
+    .topLeft {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .crumb {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .iconBtn {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+    }
+
+    .bot {
+      width: 120px;
+      height: 120px;
+      border-radius: 22px;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), transparent 35%),
+                  linear-gradient(135deg, rgba(74,144,226,0.40), rgba(32,201,151,0.18));
+      border: 1px solid rgba(255,255,255,0.10);
+      display: grid;
+      place-items: center;
+      font-size: 42px;
+    }
+
+    .hero h2 { margin: 0; font-size: 20px; }
+    .hero p { margin: 6px 0 0; color: var(--muted); line-height: 1.45; font-size: 13px; }
+
+    .quickRow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pillBtn {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: transform 0.05s ease;
+    }
+    .pillBtn:active { transform: scale(0.98); }
+
+    /* Suggestion Area */
+    .suggestionBox {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      overflow: auto;
+    }
+
+    .suggestionTitle {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    #aiOutput {
+      white-space: pre-wrap;
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Preview cards */
     .preview-card {
-  background: #141414;
-  border: 1px solid #2b2b2b;
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 10px;
-}
+      background: rgba(0,0,0,0.20);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .preview-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .path-old {
+      color: rgba(255, 170, 170, 0.95);
+      font-size: 13px;
+      word-break: break-word;
+    }
+    .path-new {
+      color: rgba(170, 255, 210, 0.95);
+      font-size: 13px;
+      word-break: break-word;
+      margin-top: 2px;
+    }
+    .small-note {
+      color: var(--muted2);
+      font-size: 12px;
+      margin-top: 8px;
+    }
 
-.preview-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
+    /* Bottom composer */
+    .composer {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid var(--border);
+    }
 
-.badge {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #2a2a2a;
-}
+    #userInput {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      outline: none;
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      font-size: 14px;
+    }
 
-.path-old {
-  color: #ffb3b3;
-  font-size: 14px;
-  word-break: break-word;
-}
+    .primaryBtn {
+      border: 1px solid rgba(74,144,226,0.35);
+      background: rgba(74,144,226,0.22);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
 
-.path-new {
-  color: #b9ffb9;
-  font-size: 14px;
-  word-break: break-word;
-}
+    .dangerBtn {
+      border: 1px solid rgba(255,77,79,0.35);
+      background: rgba(255,77,79,0.18);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
 
-.small-note {
-  color: #bdbdbd;
-  font-size: 12px;
-  margin-top: 6px;
-}
+    /* Right panel */
+    .right {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-  </style>
+    .rightHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .rightHeader h3 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .fileCard {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 280px;
+    }
+
+    .fileRow {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .fileIcon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .fileName {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .filePreview {
+      flex: 1;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px dashed rgba(255,255,255,0.18);
+      display: grid;
+      place-items: center;
+      color: var(--muted2);
+      font-size: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    /* Progress bar */
+    #progressWrap {
+      margin-top: 14px;
+      display: none;
+    }
+    #progressText {
+      font-size: 12px;
+      color: var(--muted);
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .progressTrack {
+      background: rgba(255,255,255,0.10);
+      border-radius: 999px;
+      overflow: hidden;
+      height: 10px;
+      border: 1px solid var(--border);
+    }
+    #progressBar {
+      width: 0%;
+      height: 10px;
+      background: var(--accent);
+    }
+
+    /* Approve row */
+    .approveRow {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Small screen */
+    @media (max-width: 1100px) {
+      .app {
+        grid-template-columns: 240px 1fr;
+        grid-template-rows: auto auto;
+      }
+      .right { display: none; }
+    }
+  
+    /* Footer */
+  .app-footer{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    background: rgba(255,255,255,0.9);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    backdrop-filter: blur(10px);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    z-index: 9999;
+  }
+  .footer-left,.footer-center,.footer-right{
+    display:flex; align-items:center; gap:10px;
+  }
+  .footer-appname{
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .footer-version{
+    font-size: 12px;
+    color: rgba(0,0,0,0.65);
+  }
+  .footer-btn{
+    border: 1px solid rgba(0,0,0,0.15);
+    background: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .footer-btn:disabled{
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .footer-status{
+    font-size: 12px;
+    color: rgba(0,0,0,0.65);
+    min-width: 140px;
+    text-align: right;
+  }
+
+  .app-footer{
+  background: transparent;
+}
+  /* IMPORTANT: prevent footer covering your UI */
+  body { padding-bottom: 52px; }
+</style>
+
+
 </head>
 
 <body>
+  <div class="app">
 
-<h2>Desk Assistant AI</h2>
+    <!-- Sidebar -->
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="logo">DA</div>
+        <div>
+          <h1>Desk Assistant AI</h1>
+          <p>Preview • Approve • Undo</p>
+        </div>
+      </div>
 
-<input id="userInput" placeholder="What would you like to do?" />
+      <div class="nav">
+        <a class="active"><span class="icon">🏠</span>Dashboard</a>
+        <a><span class="icon">🧾</span>Activity Log</a>
+        <a><span class="icon">💡</span>Suggestions</a>
+        <a><span class="icon">⚙️</span>Preferences</a>
+        <a><span class="icon">ℹ️</span>About</a>
+      </div>
 
-<div>
-<button class="action-btn" onclick="quickAction('Organize my Downloads folder. Give folder suggestions and what will happen after I approve.')">
-  Organize Downloads </button>
+      <div class="sidebarCard">
+        <div class="badgeDot"></div>
+        <div>
+          <p class="t1"><b>Low CPU usage</b></p>
+          <p class="t2">Quietly monitoring your files</p>
+        </div>
+      </div>
+    </aside>
 
-<button class="action-btn" onclick="quickAction('Organize my Desktop folder. Give folder suggestions and what will happen after I approve.')">
-  Organize Desktop </button>
+    <!-- Main -->
+    <main class="main glass">
 
-<button class="action-btn" onclick="quickAction('Organize my Downloads and Desktop together. Give a simple plan and mention nothing changes until I approve.')">
-  Organize Downloads + Desktop </button>
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="topLeft">
+          <span class="crumb">Dashboard</span>
+        </div>
+        <div class="actions">
+          <button class="iconBtn" title="Settings">⚙️</button>
+          <button class="iconBtn" title="Notifications">🔔</button>
+        </div>
+      </div>
 
-<button class="action-btn" onclick="quickAction('Find Resume Files')">
-  Find Resume Files </button>
+      <!-- Workspace -->
+      <div class="workspace">
+        <div class="hero">
+          <div class="bot">🤖</div>
+          <div>
+            <h2>Good to see you!</h2>
+            <p>
+              I can help you keep Downloads and Desktop organized.
+              I will always show a preview first — nothing changes without your approval.
+            </p>
+            <div class="quickRow" style="margin-top:10px;">
+              <button class="pillBtn" onclick="quickAction('downloads')">Organize Downloads</button>
+              <button class="pillBtn" onclick="quickAction('desktop')">Organize Desktop</button>
+              <button class="pillBtn" onclick="quickAction('both')">Organize Both</button>
+              <button class="pillBtn" onclick="quickAction('resume')">Find Resume Files</button>
+              <button class="pillBtn" onclick="quickAction('cleanDesktop')">Clean Desktop</button>
+            </div>
+          </div>
+        </div>
 
-<button class="action-btn" onclick="quickAction('Clean Desktop')">
-  Clean Desktop </button>
-</div>
+        <div class="suggestionBox">
+          <div class="suggestionTitle"><b>Assistant Output</b></div>
 
-<div class="suggestion">
-  <p><b>AI Suggestion:</b></p>
+          <p id="aiOutput">Click a quick action above to generate suggestions.</p>
 
-  <p id="aiOutput">Waiting for your instruction...</p>
+          <!-- Preview cards here -->
+          <div id="previewList" style="margin-top:12px;"></div>
 
-  <!-- Preview cards -->
-  <div id="previewList" style="margin-top:12px;"></div>
+          <!-- Progress bar -->
+          <div id="progressWrap">
+            <span id="progressText">Working...</span>
+            <div class="progressTrack">
+              <div id="progressBar"></div>
+            </div>
+          </div>
 
-  <!-- Progress bar (THIS WAS MISSING) -->
-  <div id="progressWrap" style="display:none; margin-top:14px;">
-    <div style="font-size:12px; color:#bdbdbd; margin-bottom:6px;">
-      <span id="progressText">Working...</span>
-    </div>
+          <!-- Approve row -->
+          <div class="approveRow">
+            <button class="primaryBtn" onclick="approveAction()">Approve</button>
+            <button class="dangerBtn" onclick="cancelAction()">Cancel</button>
+            <button id="undoBtn" class="iconBtn" onclick="undoLast()" style="display:none;">Undo</button>
+          </div>
+        </div>
+      </div>
 
-    <div style="background:#2b2b2b; border-radius:999px; overflow:hidden; height:10px;">
-      <div id="progressBar"
-          style="width:0%; height:10px; background:#4A90E2;"></div>
-    </div>
+      <!-- Composer -->
+      <div class="composer">
+        <input id="userInput" placeholder="Ask me anything (coming soon)..." />
+        <button class="primaryBtn" onclick="quickAction('both')">Run</button>
+      </div>
+
+    </main>
+
+    <!-- Right Panel -->
+    <aside class="right glass">
+      <div class="rightHeader">
+        <h3>File Preview</h3>
+        <span style="color:var(--muted); font-size:12px;">(UI only)</span>
+      </div>
+
+      <div class="fileCard">
+        <div class="fileRow">
+          <div class="fileIcon">PDF</div>
+          <div>
+            <p class="fileName">Sample_Document.pdf</p>
+            <div class="meta">
+              Date modified: —<br/>
+              Size: —<br/>
+              Location: —
+            </div>
+          </div>
+        </div>
+
+        <div class="filePreview">
+          Preview area (later we can show image/PDF thumbnail).
+        </div>
+
+        <button class="primaryBtn" onclick="quickAction('downloads')">Scan Downloads</button>
+        <button class="iconBtn" onclick="quickAction('cleanDesktop')">Suggest Clean Desktop</button>
+      </div>
+    </aside>
+
   </div>
-</div>
-
-
-<button id="undoBtn" class="action-btn" onclick="undoLast()" style="display:none;">↩️Undo</button>
-<button class="approve" onclick="approveAction()">Approve</button>
-<button class="cancel" onclick="cancelAction()">Cancel</button>
 
 <!-- JavaScript -->
 
 <script>
+  const { app } = require("electron");
+  document.getElementById("version").innerText = app.getVersion();
   let currentPreview = [];
 
   // Progress helpers
@@ -390,6 +900,23 @@ async function quickAction(action) {
   }
 </script>
 
+<script type="module" src="./index.js"></script>
+<!-- Footer -->
+<div id="appFooter" class="app-footer">
+  <div class="footer-left">
+    <span class="footer-appname">Desk Assistant AI</span>
+  </div>
+
+  <div class="footer-center">
+    <span id="footerVersion" class="footer-version">v—</span>
+  </div>
+
+  <div class="footer-right">
+    <button id="footerUpdateBtn" class="footer-btn">Check for Updates</button>
+    <span id="footerUpdateStatus" class="footer-status"></span>
+  </div>
+</div>
 
 </body>
+<div id="version" style="font-size:12px; color:gray; margin-top:10px;"></div>
 </html>

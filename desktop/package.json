@@ -1,8 +1,8 @@
 {
   "name": "desk-assistant-ai",
-  "version": "1.0.0",
-  "description": "Desk Assistant AI - File organizer with preview + approval + undo",
-  "main": "index.js",
+  "version": "1.0.1",
+  "description": "Desk Assistant AI - An Intelligent Privacy-First File Management System",
+  "main": "main.js",
   "author": "Shreyas Vengurlekar",
   "license": "ISC",
   "scripts": {
@@ -13,6 +13,13 @@
   "build": {
     "appId": "com.shreyas.deskassistantai",
     "productName": "Desk Assistant AI",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "shreyasvengurlekar",
+        "repo": "desk-assistant-ai-applicatio"
+      }
+    ],
     "directories": {
       "output": "dist"
     },
@@ -32,10 +39,13 @@
   },
   "devDependencies": {
     "electron": "^40.1.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.1"
   },
   "dependencies": {
     "@google/genai": "^1.39.0",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "electron-updater": "^6.8.3",
+    "sqlite3": "^5.1.7"
   }
 }
