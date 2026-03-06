@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const sqlite3 = require("sqlite3").verbose();
 require("dotenv").config();
-
+const { autoUpdater } = require("electron-updater");
 const { scanFolders } = require("./fileScanner");
 const { buildPdfRenamePreview } = require("./renamePreview");
 const { applyRenameActions, undoRenameActions } = require("./renameExecutor");
@@ -18,7 +18,6 @@ const {
   dialog,
 } = require("electron");
 
-const { autoUpdater } = require("electron-updater");
 
 // ---------- Database ----------
 const db = new sqlite3.Database("./deskassistant.db");
@@ -187,7 +186,7 @@ app.whenReady().then(() => {
 
   // Auto-check updates after startup (works when packed/installed)
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {});
+    autoUpdater.checkForUpdates().catch(() => { });
   }, 3000);
 
   app.on("activate", () => {
