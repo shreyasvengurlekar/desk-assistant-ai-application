@@ -17,6 +17,9 @@ const {
   nativeImage,
   dialog,
 } = require("electron");
+const gotTheLock = app.requestSingleInstanceLock();
+
+
 
 
 // ---------- Database ----------
@@ -34,6 +37,22 @@ db.run(`
 // ---------- Globals ----------
 let mainWindow = null;
 let tray = null;
+
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    // Someone tried to open a second instance, focus existing window instead
+    if (mainWindow) {
+      if (!mainWindow.isVisible()) mainWindow.show();
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
+
 
 // ---------- Window ----------
 function createWindow() {
