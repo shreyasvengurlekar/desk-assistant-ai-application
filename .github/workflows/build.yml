@@ -37,5 +37,6 @@ jobs:
           artifacts: "desktop/dist/*.exe,desktop/dist/*.blockmap,desktop/dist/latest.yml"
           allowUpdates: true
           replacesArtifacts: true
+          removeArtifacts: true
           artifactErrorsFailBuild: true
           token: ${{ secrets.GITHUB_TOKEN }}
