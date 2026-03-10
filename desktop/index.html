@@ -5,976 +5,439 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Desk Assistant AI</title>
-
-  <style>
-    :root {
-      --bg: #0b0f14;
-      --panel: rgba(255, 255, 255, 0.06);
-      --panel2: rgba(255, 255, 255, 0.08);
-      --border: rgba(255, 255, 255, 0.10);
-      --text: rgba(255, 255, 255, 0.92);
-      --muted: rgba(255, 255, 255, 0.65);
-      --muted2: rgba(255, 255, 255, 0.45);
-      --accent: #4A90E2;
-      --good: #20c997;
-      --bad: #ff4d4f;
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-      --radius: 16px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(1200px 600px at 25% 10%, rgba(74, 144, 226, 0.25), transparent 55%),
-        radial-gradient(900px 500px at 85% 20%, rgba(32, 201, 151, 0.18), transparent 55%),
-        var(--bg);
-      color: var(--text);
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .app {
-      height: 100vh;
-      display: grid;
-      grid-template-columns: 260px 1fr 340px;
-      gap: 14px;
-      padding: 14px;
-    }
-
-    .glass {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
-    /* Sidebar */
-    .sidebar {
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      min-width: 240px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 10px;
-    }
-
-    .logo {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(74, 144, 226, 1), rgba(32, 201, 151, 1));
-      display: grid;
-      place-items: center;
-      font-weight: 900;
-      color: white;
-      box-shadow: 0 10px 25px rgba(74, 144, 226, 0.25);
-    }
-
-    .brand h1 {
-      font-size: 16px;
-      margin: 0;
-      line-height: 1.1;
-    }
-
-    .brand p {
-      margin: 2px 0 0;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .nav {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 14px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid var(--border);
-    }
-
-    .nav a {
-      text-decoration: none;
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 12px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .nav a.active {
-      background: rgba(74, 144, 226, 0.18);
-      border: 1px solid rgba(74, 144, 226, 0.25);
-    }
-
-    .nav a span.icon {
-      width: 18px;
-      opacity: 0.9;
-    }
-
-    .sidebarCard {
-      margin-top: auto;
-      padding: 12px;
-      border-radius: 14px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid var(--border);
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .badgeDot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: var(--good);
-      box-shadow: 0 0 0 6px rgba(32, 201, 151, 0.10);
-    }
-
-    .sidebarCard .t1 {
-      font-size: 13px;
-      margin: 0;
-    }
-
-    .sidebarCard .t2 {
-      font-size: 12px;
-      color: var(--muted);
-      margin: 2px 0 0;
-    }
-
-    /* Center */
-    .main {
-      padding: 14px;
-      display: grid;
-      grid-template-rows: 54px 1fr 74px;
-      gap: 12px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid var(--border);
-    }
-
-    .topLeft {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .crumb {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .iconBtn {
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 9px 10px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-
-    .workspace {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: 12px;
-      padding: 14px;
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 130px 1fr;
-      gap: 12px;
-      align-items: center;
-      padding: 16px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-    }
-
-    .bot {
-      width: 120px;
-      height: 120px;
-      border-radius: 22px;
-      background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22), transparent 35%),
-        linear-gradient(135deg, rgba(74, 144, 226, 0.40), rgba(32, 201, 151, 0.18));
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      display: grid;
-      place-items: center;
-      font-size: 42px;
-    }
-
-    .hero h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .hero p {
-      margin: 6px 0 0;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 13px;
-    }
-
-    .quickRow {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .pillBtn {
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-size: 13px;
-      transition: transform 0.05s ease;
-    }
-
-    .pillBtn:active {
-      transform: scale(0.98);
-    }
-
-    /* Suggestion Area */
-    .suggestionBox {
-      padding: 14px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      overflow: auto;
-    }
-
-    .suggestionTitle {
-      margin: 0 0 10px;
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    #aiOutput {
-      white-space: pre-wrap;
-      font-size: 14px;
-      margin: 0;
-      line-height: 1.5;
-    }
-
-    /* Preview cards */
-    .preview-card {
-      background: rgba(0, 0, 0, 0.20);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px;
-      margin-top: 10px;
-    }
-
-    .preview-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .badge {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-
-    .path-old {
-      color: rgba(255, 170, 170, 0.95);
-      font-size: 13px;
-      word-break: break-word;
-    }
-
-    .path-new {
-      color: rgba(170, 255, 210, 0.95);
-      font-size: 13px;
-      word-break: break-word;
-      margin-top: 2px;
-    }
-
-    .small-note {
-      color: var(--muted2);
-      font-size: 12px;
-      margin-top: 8px;
-    }
-
-    /* Bottom composer */
-    .composer {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 12px;
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid var(--border);
-    }
-
-    #userInput {
-      flex: 1;
-      padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      outline: none;
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      font-size: 14px;
-    }
-
-    .primaryBtn {
-      border: 1px solid rgba(74, 144, 226, 0.35);
-      background: rgba(74, 144, 226, 0.22);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 12px 14px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .dangerBtn {
-      border: 1px solid rgba(255, 77, 79, 0.35);
-      background: rgba(255, 77, 79, 0.18);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 12px 14px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    /* Right panel */
-    .right {
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .rightHeader {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .rightHeader h3 {
-      margin: 0;
-      font-size: 14px;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .fileCard {
-      padding: 14px;
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 280px;
-    }
-
-    .fileRow {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .fileIcon {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid var(--border);
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      color: var(--accent);
-    }
-
-    .fileName {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    .meta {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .filePreview {
-      flex: 1;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px dashed rgba(255, 255, 255, 0.18);
-      display: grid;
-      place-items: center;
-      color: var(--muted2);
-      font-size: 12px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    /* Progress bar */
-    #progressWrap {
-      margin-top: 14px;
-      display: none;
-    }
-
-    #progressText {
-      font-size: 12px;
-      color: var(--muted);
-      display: inline-block;
-      margin-bottom: 6px;
-    }
-
-    .progressTrack {
-      background: rgba(255, 255, 255, 0.10);
-      border-radius: 999px;
-      overflow: hidden;
-      height: 10px;
-      border: 1px solid var(--border);
-    }
-
-    #progressBar {
-      width: 0%;
-      height: 10px;
-      background: var(--accent);
-    }
-
-    /* Approve row */
-    .approveRow {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    /* Small screen */
-    @media (max-width: 1100px) {
-      .app {
-        grid-template-columns: 240px 1fr;
-        grid-template-rows: auto auto;
-      }
-
-      .right {
-        display: none;
-      }
-    }
-
-    /* Footer */
-    .app-footer {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 14px;
-      background: rgba(255, 255, 255, 0.9);
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
-      backdrop-filter: blur(10px);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      z-index: 9999;
-    }
-
-    .footer-left,
-    .footer-center,
-    .footer-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .footer-appname {
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .footer-version {
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.65);
-    }
-
-    .footer-btn {
-      border: 1px solid rgba(0, 0, 0, 0.15);
-      background: white;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .footer-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .footer-status {
-      font-size: 12px;
-      color: rgba(0, 0, 0, 0.65);
-      min-width: 140px;
-      text-align: right;
-    }
-
-    .app-footer {
-      background: transparent;
-    }
-
-    /* IMPORTANT: prevent footer covering your UI */
-    body {
-      padding-bottom: 52px;
-    }
-  </style>
-
-
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-  <div id="updatePanel" style="display:none">
-    <h3>Update Available</h3>
-    <p id="updateStatus"></p>
-    <progress id="updateProgress" value="0" max="100"></progress>
-    <button id="restartApp">Restart to Update</button>
-  </div>
-
   <div class="app">
 
     <!-- Sidebar -->
-    <aside class="sidebar glass">
+    <aside class="sidebar">
       <div class="brand">
-        <div class="logo">DA</div>
-        <div>
-          <h1>Desk Assistant AI</h1>
-          <p>Preview • Approve • Undo</p>
+        <div class="logo-container">
+          <img src="assets/icon.png" alt="Logo" class="logo">
         </div>
+        <h1>Desk Assistant AI</h1>
       </div>
 
-      <div class="nav">
-        <a class="active"><span class="icon">🏠</span>Dashboard</a>
-        <a><span class="icon">🧾</span>Activity Log</a>
-        <a><span class="icon">💡</span>Suggestions</a>
-        <a><span class="icon">⚙️</span>Preferences</a>
-        <a><span class="icon">ℹ️</span>About</a>
-      </div>
+      <nav class="nav">
+        <a class="active" data-page="dashboard" onclick="showPage('dashboard')">
+          <span class="icon">🏠</span> <span class="nav-text">Dashboard</span>
+        </a>
+        <a data-page="activity" onclick="showPage('activity')">
+          <span class="icon">🧾</span> <span class="nav-text">Activity Log</span>
+        </a>
+        <a data-page="suggestions" onclick="showPage('suggestions')">
+          <span class="icon">💡</span> <span class="nav-text">Suggestions</span>
+        </a>
+        <a data-page="preferences" onclick="showPage('preferences')">
+          <span class="icon">⚙️</span> <span class="nav-text">Preferences</span>
+        </a>
+        <a data-page="about" onclick="showPage('about')">
+          <span class="icon">ℹ️</span> <span class="nav-text">About</span>
+        </a>
+      </nav>
 
-      <div class="sidebarCard">
-        <div class="badgeDot"></div>
-        <div>
-          <p class="t1"><b>Low CPU usage</b></p>
-          <p class="t2">Quietly monitoring your files</p>
+      <div class="sidebar-footer">
+        <div class="status-dot"></div>
+        <div class="status-text">
+          <p>System Status</p>
+          <p id="systemStatusText">Monitoring files...</p>
         </div>
       </div>
     </aside>
 
-    <!-- Main -->
-    <main class="main glass">
-
-      <!-- Topbar -->
-      <div class="topbar">
-        <div class="topLeft">
+    <!-- Main Content -->
+    <main class="main">
+      <header class="topbar">
+        <div class="page-title">
+          <span class="icon">🏠</span>
           <span class="crumb">Dashboard</span>
         </div>
-        <div class="actions">
-          <button class="iconBtn" title="Settings">⚙️</button>
-          <button class="iconBtn" title="Notifications">🔔</button>
+        <div class="top-actions">
+          <button class="icon-btn" title="Toggle Theme" onclick="toggleTheme()">🌓</button>
+          <button class="icon-btn" title="Settings" onclick="showPage('preferences')">⚙️</button>
+          <div class="notif-wrapper">
+            <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">
+              🔔
+              <div id="notifBadge" class="notification-badge"></div>
+            </button>
+            <div id="notifPanel" class="notif-panel">
+              <div class="notif-header">
+                <h4>Notifications</h4>
+                <button class="btn-text" onclick="clearNotifications()">Clear All</button>
+              </div>
+              <div id="notifList" class="notif-list">
+                <div class="empty-state">No notifications right now.</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <!-- Workspace -->
-      <div class="workspace">
-        <div class="hero">
-          <div class="bot">🤖</div>
-          <div>
-            <h2>Good to see you!</h2>
-            <p>
-              I can help you keep Downloads and Desktop organized.
-              I will always show a preview first — nothing changes without your approval.
-            </p>
-            <div class="quickRow" style="margin-top:10px;">
-              <button class="pillBtn" onclick="quickAction('downloads')">Organize Downloads</button>
-              <button class="pillBtn" onclick="quickAction('desktop')">Organize Desktop</button>
-              <button class="pillBtn" onclick="quickAction('both')">Organize Both</button>
-              <button class="pillBtn" onclick="quickAction('resume')">Find Resume Files</button>
-              <button class="pillBtn" onclick="quickAction('cleanDesktop')">Clean Desktop</button>
+      <!-- Dashboard Page -->
+      <section id="dashboardPage" class="page">
+        <div class="dashboard-header">
+          <div class="dashboard-card">
+            <div class="logo-container large">
+              <img src="assets/icon.png" alt="Logo" class="logo">
+            </div>
+            <div class="greeting-content">
+              <h2>Good to see you!</h2>
+              <p>
+                I'm your Desk Assistant. I'll show you a preview of every action before making changes.
+              </p>
+              <div class="quick-actions">
+                <button class="pill-btn" onclick="handleQuickAction('downloads')">Organize Downloads</button>
+                <button class="pill-btn" onclick="handleQuickAction('duplicates')">Duplicates</button>
+                <button class="pill-btn" onclick="handleQuickAction('largeFiles')">Large Files</button>
+                <button class="pill-btn" onclick="handleQuickAction('resume')">Resume</button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="suggestionBox">
-          <div class="suggestionTitle"><b>Assistant Output</b></div>
-
-          <p id="aiOutput">Click a quick action above to generate suggestions.</p>
-
-          <!-- Preview cards here -->
-          <div id="previewList" style="margin-top:12px;"></div>
-
-          <!-- Progress bar -->
-          <div id="progressWrap">
-            <span id="progressText">Working...</span>
-            <div class="progressTrack">
-              <div id="progressBar"></div>
+        <div id="smartSuggestions" class="smart-suggestions">
+          <div class="section-header" onclick="toggleSuggestions()">
+            <h3 class="section-title">Smart Suggestions</h3>
+            <button id="suggestionsToggle" class="icon-btn mini">▼</button>
+          </div>
+          <div id="suggestionsGrid" class="suggestions-grid">
+            <div class="suggestion-item" onclick="reviewMessyNames()">
+              <span class="suggestion-icon">📁</span>
+              <div class="suggestion-info">
+                <span id="messyFilesCount">0</span> messy file names
+                <button class="review-btn">Review</button>
+              </div>
+            </div>
+            <div class="suggestion-item" onclick="findDuplicates()">
+              <span class="suggestion-icon">👯</span>
+              <div class="suggestion-info">
+                <span id="duplicatesCount">0</span> duplicates found
+                <button class="review-btn">Review</button>
+              </div>
+            </div>
+            <div class="suggestion-item" onclick="showLargeFiles()">
+              <span class="suggestion-icon">💾</span>
+              <div class="suggestion-info">
+                <span id="largeFilesCount">0</span> large files (>500MB)
+                <button class="review-btn">Review</button>
+              </div>
+            </div>
+            <div class="suggestion-item" onclick="findMyResume()">
+              <span class="suggestion-icon">📄</span>
+              <div class="suggestion-info">
+                <span id="resumesCount">0</span> resume files found
+                <button class="review-btn">Review</button>
+              </div>
             </div>
           </div>
+        </div>
 
-          <!-- Approve row -->
-          <div class="approveRow">
-            <button class="primaryBtn" onclick="approveAction()">Approve</button>
-            <button class="dangerBtn" onclick="cancelAction()">Cancel</button>
-            <button id="undoBtn" class="iconBtn" onclick="undoLast()" style="display:none;">Undo</button>
+        <div id="chatInterface" class="chat-interface">
+          <div id="chatMessages" class="chat-messages">
+            <!-- Messages will be injected here -->
           </div>
         </div>
+      </section>
+
+      <!-- Activity Log Page -->
+      <section id="activityPage" class="page">
+        <div class="page-content-padding" style="padding-top: 24px;">
+          <div class="page-header">
+            <h3 class="section-title">Activity Log</h3>
+            <select id="logFilter" class="select-input" onchange="loadActivityLog()">
+              <option value="all">All Actions</option>
+              <option value="rename">Renames</option>
+              <option value="delete">Deletions</option>
+              <option value="merge">Merges</option>
+              <option value="undo">Undos</option>
+            </select>
+          </div>
+          <div class="output-panel scrollable">
+            <div id="activityContent">No recent activity.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Suggestions Page -->
+      <section id="suggestionsPage" class="page">
+        <div class="page-content-padding" style="padding-top: 24px;">
+          <h3 class="section-title">AI Insights</h3>
+          <div id="suggestionsList" class="output-panel scrollable">
+            <div class="empty-state">
+              <span class="empty-icon">💡</span>
+              <p>No new AI suggestions at the moment.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preferences Page -->
+      <section id="preferencesPage" class="page scrollable">
+        <div class="page-content-padding" style="padding-top: 24px;">
+          <h3 class="section-title">Preferences</h3>
+          
+          <div class="settings-grid-layout">
+            <!-- A. AI & Assistant -->
+            <div class="settings-card">
+              <div class="settings-group">
+                <h4>AI & Assistant</h4>
+                <div id="ollamaSettingsStatus" class="ollama-status-banner">
+                  Checking status...
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Ollama Connection</span>
+                    <p class="setting-desc">Test if local AI is ready</p>
+                  </div>
+                  <button class="card-btn mini" onclick="testOllamaStatus()">Test Now</button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Install Ollama</span>
+                    <p class="setting-desc">Required for AI features</p>
+                  </div>
+                  <button class="card-btn primary mini" onclick="openOllamaWebsite()">Download</button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>AI Onboarding</span>
+                    <p class="setting-desc">Re-run the setup tour</p>
+                  </div>
+                  <button class="card-btn mini" onclick="startOllamaSetup()">Run Setup</button>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>App Tour</span>
+                    <p class="setting-desc">Show features again</p>
+                  </div>
+                  <button class="card-btn mini" onclick="localStorage.removeItem('hasSeenTour'); location.reload();">Show Tour</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- B. Scan Locations -->
+            <div class="settings-card">
+              <div class="settings-group">
+                <h4>Scan Locations</h4>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Core Folders</span>
+                    <p class="setting-desc">Select folders to monitor</p>
+                  </div>
+                  <div class="checkbox-group">
+                    <label class="checkbox-item">
+                      <input type="checkbox" id="scanDesktop" checked> Desktop
+                    </label>
+                    <label class="checkbox-item">
+                      <input type="checkbox" id="scanDownloads" checked> Downloads
+                    </label>
+                    <label class="checkbox-item">
+                      <input type="checkbox" id="scanDocuments" checked> Documents
+                    </label>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Media Folders</span>
+                  </div>
+                  <div class="checkbox-group">
+                    <label class="checkbox-item">
+                      <input type="checkbox" id="scanPictures"> Pictures
+                    </label>
+                    <label class="checkbox-item">
+                      <input type="checkbox" id="scanVideos"> Videos
+                    </label>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Advanced Scan</span>
+                    <p class="setting-desc">Scan the full computer (slower)</p>
+                  </div>
+                  <label class="checkbox-item danger-text">
+                    <input type="checkbox" id="scanFull"> Entire Computer
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- C. File Management -->
+            <div class="settings-card">
+              <div class="settings-group">
+                <h4>File Management</h4>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Large File Threshold</span>
+                    <p class="setting-desc">Identify files larger than this</p>
+                  </div>
+                  <div class="setting-controls">
+                    <select id="prefLargeThreshold" class="select-input" onchange="toggleCustomSizeInput()">
+                      <option value="500">500 MB</option>
+                      <option value="1000">1 GB</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                    <div id="customSizeInputWrap" style="display: none; margin-top: 8px;">
+                      <div style="display: flex; gap: 4px;">
+                        <input type="number" id="customSizeVal" placeholder="Val" class="text-input mini" style="width: 60px;">
+                        <select id="customSizeUnit" class="select-input mini">
+                          <option value="MB">MB</option>
+                          <option value="GB">GB</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Deletion Method</span>
+                    <p class="setting-desc">How files are removed</p>
+                  </div>
+                  <select id="prefDeleteMethod" class="select-input">
+                    <option value="recycle">Recycle Bin</option>
+                    <option value="permanent">Permanent</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- D. Notifications & Monitoring -->
+            <div class="settings-card">
+              <div class="settings-group">
+                <h4>Monitoring & Alerts</h4>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>File Monitoring</span>
+                    <p class="setting-desc">Detect new files in real-time</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="prefMonitor" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Desktop Notifications</span>
+                    <p class="setting-desc">Show alerts for file events</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="prefNotify" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- E. App Preferences -->
+            <div class="settings-card">
+              <div class="settings-group">
+                <h4>App Preferences</h4>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Start on Boot</span>
+                    <p class="setting-desc">Launch with Windows</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="prefBoot">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-label">
+                    <span>Theme</span>
+                    <p class="setting-desc">Switch Light/Dark mode</p>
+                  </div>
+                  <button class="card-btn mini" onclick="toggleTheme()">Toggle Theme 🌓</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- About Page -->
+      <section id="aboutPage" class="page scrollable">
+        <div class="page-content-padding" style="padding-top: 24px;">
+          <h3 class="section-title">About</h3>
+          <div class="about-card">
+            <div class="logo-container large">
+              <img src="assets/icon.png" alt="Logo" class="logo">
+            </div>
+            <h3>Desk Assistant AI</h3>
+            <p>Version <span id="footerVersion">v1.0.1</span></p>
+            <p class="about-desc">Local-first AI file management for ultimate privacy.</p>
+            <div class="about-links">
+              <button class="btn-text" onclick="openExternalLink('https://github.com/shreyasvengurlekar/desk-assistant-ai-website.git')">GitHub</button>
+              <button class="btn-text" onclick="openExternalLink('https://deskassistantai.vercel.app/privacy')">Privacy Policy</button>
+              <button class="btn-text" onclick="openExternalLink('https://deskassistantai.vercel.app/terms')">Terms of Service</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Chat Area -->
+      <div class="chat-bottom">
+        <div id="smartActionFlow" class="smart-action-flow" style="display: none;">
+          <button class="btn-primary" onclick="approveAction()">Approve</button>
+          <button class="btn-secondary" onclick="cancelAction()">Reject</button>
+          <button id="undoBtn" class="btn-secondary" onclick="undoLast()" style="display:none;">Undo</button>
+        </div>
+        
+        <div class="chat-container">
+          <button id="micBtn" class="mic-btn" onclick="togglePTT()" title="Push to talk">🎤</button>
+          <textarea id="userInput" class="chat-input" placeholder="Ask me anything related to your FILES..." rows="1"></textarea>
+          <button class="send-btn" onclick="askAssistant()">Ask AI</button>
+        </div>
+        <div id="micStatus" class="mic-status"></div>
       </div>
 
-      <!-- Composer -->
-      <div class="composer">
-        <input id="userInput" placeholder="Ask me anything (coming soon)..." />
-        <button class="primaryBtn" onclick="quickAction('both')">Run</button>
-      </div>
-
+      <footer class="minimal-footer">
+        <div class="status-bar">
+          <span id="aiStatus"><span class="dot-status"></span> AI Checking...</span>
+          <span id="monitoringStatus"><span class="dot-status"></span> Monitoring Off</span>
+          <span id="suggestionsStatus"><span class="dot-status"></span> 0 Suggestions</span>
+        </div>
+        <div class="footer-info">
+          <span>Powered by Ollama (phi3)</span>
+          <span id="version">v1.0.1</span>
+        </div>
+      </footer>
     </main>
 
-    <!-- Right Panel -->
-    <aside class="right glass">
-      <div class="rightHeader">
-        <h3>File Preview</h3>
-        <span style="color:var(--muted); font-size:12px;">(UI only)</span>
-      </div>
-
-      <div class="fileCard">
-        <div class="fileRow">
-          <div class="fileIcon">PDF</div>
-          <div>
-            <p class="fileName">Sample_Document.pdf</p>
-            <div class="meta">
-              Date modified: —<br />
-              Size: —<br />
-              Location: —
-            </div>
-          </div>
+    <!-- Ollama Setup Overlay -->
+    <div id="ollamaSetupOverlay" class="onboarding-overlay" style="display: none;">
+      <div class="onboarding-card">
+        <div id="ollamaSetupContent">
+          <!-- Steps will be injected here -->
         </div>
-
-        <div class="filePreview">
-          Preview area (later we can show image/PDF thumbnail).
+        <div class="onboarding-footer">
+          <button id="skipOllama" class="btn-text" onclick="skipOllamaSetup()">Skip for Now</button>
+          <button id="nextOllama" class="btn-primary" onclick="nextOllamaStep()">Next</button>
         </div>
-
-        <button class="primaryBtn" onclick="quickAction('downloads')">Scan Downloads</button>
-        <button class="iconBtn" onclick="quickAction('cleanDesktop')">Suggest Clean Desktop</button>
       </div>
-    </aside>
+    </div>
+
+    <!-- Onboarding Tour -->
+    <div id="onboardingOverlay" class="onboarding-overlay" style="display: none;">
+      <div class="onboarding-card">
+        <div id="onboardingStepContent">
+          <!-- Step content will be injected here -->
+        </div>
+        <div class="onboarding-footer">
+          <button id="skipTour" class="btn-text" onclick="skipTour()">Skip Tour</button>
+          <button id="nextStep" class="btn-primary" onclick="nextTourStep()">Next</button>
+        </div>
+      </div>
+    </div>
 
   </div>
 
-  <!-- JavaScript -->
-
-  <script>
-    const { app } = require("electron");
-    document.getElementById("version").innerText = app.getVersion();
-    let currentPreview = [];
-
-    // Progress helpers
-    function showProgress(show) {
-      const wrap = document.getElementById("progressWrap");
-      if (!wrap) return;
-      wrap.style.display = show ? "block" : "none";
-    }
-
-    function setProgress(pct, text) {
-      const bar = document.getElementById("progressBar");
-      const t = document.getElementById("progressText");
-      if (bar) bar.style.width = `${pct}%`;
-      if (t && text) t.innerText = text;
-    }
-
-    function resetProgressSoon() {
-      setTimeout(() => {
-        showProgress(false);
-        setProgress(0, "Working...");
-      }, 800);
-    }
-
-    // Undo button helper
-    function setUndoVisible(isVisible) {
-      const btn = document.getElementById("undoBtn");
-      if (!btn) return;
-      btn.style.display = isVisible ? "inline-block" : "none";
-    }
-
-    // Preview UI helpers
-    function clearPreviewUI() {
-      const list = document.getElementById("previewList");
-      if (list) list.innerHTML = "";
-    }
-
-    function renderPreviewCards(preview) {
-      const list = document.getElementById("previewList");
-      if (!list) return;
-
-      list.innerHTML = "";
-
-      const show = preview.slice(0, 10);
-
-      show.forEach((p, idx) => {
-        const fromName = p.from.split("\\").pop();
-        const toName = p.to.split("\\").pop();
-
-        const card = document.createElement("div");
-        card.className = "preview-card";
-
-        card.innerHTML = `
-        <div class="preview-top">
-          <div><b>${idx + 1}. Rename PDF</b></div>
-          <div class="badge">preview</div>
-        </div>
-        <div class="path-old">Old: ${fromName}</div>
-        <div class="path-new">New: ${toName}</div>
-        <div class="small-note">No changes will happen until you click Approve.</div>
-      `;
-
-        list.appendChild(card);
-      });
-
-      if (preview.length > 10) {
-        const more = document.createElement("div");
-        more.className = "small-note";
-        more.innerText = `+ ${preview.length - 10} more rename suggestions...`;
-        list.appendChild(more);
-      }
-    }
-
-
-    function handlePreviewResponse(res) {
-      if (!res || res.error) {
-        document.getElementById("aiOutput").innerText =
-          "❌ Error generating preview.";
-        currentPreview = [];
-        return;
-      }
-
-      currentPreview = res.preview || [];
-
-      if (currentPreview.length === 0) {
-        document.getElementById("aiOutput").innerText =
-          "No rename suggestions found.";
-        return;
-      }
-
-      document.getElementById("aiOutput").innerText =
-        `Rename suggestions: ${currentPreview.length}`;
-
-      renderPreviewCards(currentPreview);
-    }
-
-
-    // Button click → build preview
-    async function quickAction(action) {
-      clearPreviewUI();
-      setUndoVisible(false);
-      showProgress(false);
-
-      document.getElementById("aiOutput").innerText =
-        `Processing: ${action}...`;
-
-      try {
-
-        if (action === "downloads") {
-          const res = await window.deskAI.previewDownloads();
-          handlePreviewResponse(res);
-          return;
-        }
-
-        if (action === "desktop") {
-          const res = await window.deskAI.previewDesktop();
-          handlePreviewResponse(res);
-          return;
-        }
-
-        if (action === "both") {
-          const res = await window.deskAI.previewBoth();
-          handlePreviewResponse(res);
-          return;
-        }
-
-        if (action === "resume") {
-          document.getElementById("aiOutput").innerText =
-            "Resume Finder feature coming next step.";
-          return;
-        }
-
-        if (action === "cleanDesktop") {
-          document.getElementById("aiOutput").innerText =
-            "Clean Desktop feature coming next step.";
-          return;
-        }
-
-        if (action === "large") {
-          document.getElementById("aiOutput").innerText =
-            "Find Large Files feature coming next step.";
-          return;
-        }
-
-        if (action === "old") {
-          document.getElementById("aiOutput").innerText =
-            "Find Old Files feature coming next step.";
-          return;
-        }
-
-        if (action === "duplicate") {
-          document.getElementById("aiOutput").innerText =
-            "Find Duplicate Files feature coming next step.";
-          return;
-        }
-
-      } catch (error) {
-        document.getElementById("aiOutput").innerText =
-          "❌ Error while processing action.";
-      }
-    }
-
-    // Approve → apply renames
-    async function approveAction() {
-      if (!currentPreview || currentPreview.length === 0) {
-        document.getElementById("aiOutput").innerText =
-          "Nothing to approve.\n➡️ First click a button to generate rename suggestions.";
-        return;
-      }
-
-      clearPreviewUI();
-      showProgress(true);
-      setProgress(10, "Starting rename...");
-
-      try {
-        setProgress(30, "Renaming files...");
-        await new Promise(r => setTimeout(r, 200));
-
-        const res = await window.deskAI.applyRename(currentPreview);
-
-        if (res && res.error) {
-          setProgress(100, "Failed ❌");
-          document.getElementById("aiOutput").innerText = "❌ " + res.error;
-          resetProgressSoon();
-          return;
-        }
-
-        setProgress(80, "Finishing...");
-        await new Promise(r => setTimeout(r, 200));
-
-        const count = res.doneCount || 0;
-        setProgress(100, "Done ✅");
-
-        document.getElementById("aiOutput").innerText =
-          `✅ Rename completed. Renamed: ${count} PDF file(s).`;
-
-        currentPreview = [];
-        setUndoVisible(true);
-
-        resetProgressSoon();
-
-      } catch (error) {
-        setProgress(100, "Failed ❌");
-        document.getElementById("aiOutput").innerText = "❌ Rename apply failed.";
-        resetProgressSoon();
-      }
-    }
-
-    // Cancel → clear preview
-    function cancelAction() {
-      showProgress(false);
-      setProgress(0, "Working...");
-      currentPreview = [];
-      clearPreviewUI();
-      document.getElementById("aiOutput").innerText = "❌ Cancelled. No changes were made.";
-    }
-
-    // Undo → revert last rename
-    async function undoLast() {
-      showProgress(true);
-      setProgress(20, "Undoing...");
-      clearPreviewUI();
-      document.getElementById("aiOutput").innerText = "Undoing last rename...";
-
-      try {
-        const res = await window.deskAI.undoRename();
-
-        if (res && res.error) {
-          setProgress(100, "Failed ❌");
-          document.getElementById("aiOutput").innerText = "❌ " + res.error;
-          resetProgressSoon();
-          return;
-        }
-
-        setProgress(100, "Undo complete ✅");
-        document.getElementById("aiOutput").innerText = "↩️ " + res.message;
-
-        setUndoVisible(false);
-        resetProgressSoon();
-
-      } catch (error) {
-        setProgress(100, "Failed ❌");
-        document.getElementById("aiOutput").innerText = "❌ Undo failed.";
-        resetProgressSoon();
-      }
-    }
-  </script>
-
-  <script type="module" src="./index.js"></script>
-  <!-- Footer -->
-  <div id="appFooter" class="app-footer">
-    <div class="footer-left">
-      <span class="footer-appname">Desk Assistant AI</span>
-    </div>
-
-    <div class="footer-center">
-      <span id="footerVersion" class="footer-version">v—</span>
-    </div>
-
-    <div class="footer-right">
-      <button id="footerUpdateBtn" class="footer-btn">Check for Updates</button>
-      <span id="footerUpdateStatus" class="footer-status"></span>
-    </div>
-  </div>
-
+  <script src="renderer.js"></script>
 </body>
-<div id="version" style="font-size:12px; color:gray; margin-top:10px;"></div>
 
 </html>

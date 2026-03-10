@@ -1,42 +1,43 @@
-console.log("✅ preload.js loaded");
+// preload.js
 
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("__preloadTest", {
-  ping: () => "pong",
-});
-
-/* -------- Desk Assistant AI API -------- */
-
 contextBridge.exposeInMainWorld("deskAI", {
-
-  // Ask AI
-  ask: (prompt) => ipcRenderer.invoke("ai:ask", prompt),
-
-  // Scan files
+  // AI Commands
+  aiCommand: (msg) => ipcRenderer.invoke("ai-command", msg),
+  
+  // File Operations
   scanFiles: () => ipcRenderer.invoke("scan:files"),
-
-  // PDF rename preview
-  pdfRenamePreview: () => ipcRenderer.invoke("rename:preview:pdf"),
-
-  // Apply rename
   applyRename: (actions) => ipcRenderer.invoke("rename:apply", actions),
-
-  // Undo rename
-  undoRename: () => ipcRenderer.invoke("rename:undo")
-
-});
-
-
-/* -------- App Updater API -------- */
-contextBridge.exposeInMainWorld("updateEvents", {
-  onChecking: (callback) => ipcRenderer.on("update:checking", callback),
-  onAvailable: (callback) => ipcRenderer.on("update:available", callback),
-  onProgress: (callback) => ipcRenderer.on("update:progress", callback),
-  onReady: (callback) => ipcRenderer.on("update:ready", callback),
-});
-
-contextBridge.exposeInMainWorld("appInfo", {
+  undoRename: () => ipcRenderer.invoke("rename:undo"),
+  openFile: (filePath) => ipcRenderer.invoke("file:open", filePath),
+  openLocation: (filePath) => ipcRenderer.invoke("file:open-location", filePath),
+  deleteFile: (filePath) => ipcRenderer.invoke("file:delete", filePath),
+  mergePdfs: (filePaths) => ipcRenderer.invoke("file:merge-pdfs", filePaths),
+  
+  // Activity Log
+  getActivityLog: (filter) => ipcRenderer.invoke("db:get-activity-log", filter),
+  
+  // App Info & Stats
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
-  isPackaged: () => ipcRenderer.invoke("app:isPackaged"),
+  getSystemStats: () => ipcRenderer.invoke("system:get-stats"),
+  
+  // Extra Utilities
+  openExternal: (url) => ipcRenderer.invoke("util:open-external", url),
+  
+  // Quick Actions
+  quickAction: (action, query) => ipcRenderer.invoke("action:quick", action, query),
+
+  // File Watcher
+  onFileEvent: (callback) => ipcRenderer.on("file:event", (event, data) => callback(data)),
+  startWatcher: () => ipcRenderer.invoke("watcher:start"),
+  stopWatcher: () => ipcRenderer.invoke("watcher:stop"),
+
+  // Settings Persistence
+  saveSetting: (key, value) => ipcRenderer.invoke("settings:save", { key, value }),
+  getSetting: (key) => ipcRenderer.invoke("settings:get", key),
+
+  // Ollama Setup
+  checkOllamaStatus: () => ipcRenderer.invoke("ollama:check-status"),
+  openOllamaWebsite: () => ipcRenderer.invoke("ollama:open-website"),
 });
