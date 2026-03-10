@@ -471,8 +471,9 @@ function toggleNotifications() {
   const badge = document.getElementById('notifBadge');
   const isActive = panel.classList.toggle('active');
   
-  if (isActive && badge) {
-    badge.style.display = 'none';
+  if (isActive) {
+    hasUnread = false;
+    updateNotifBadge();
   }
 }
 
@@ -492,9 +493,16 @@ function addNotification(text) {
 
 function clearNotifications() {
   const list = document.getElementById('notifList');
-  const badge = document.getElementById('notifBadge');
+  if (!list) return;
   list.innerHTML = '<div class="empty-state">No notifications right now.</div>';
-  if (badge) badge.style.display = 'none';
+  hasUnread = false;
+  updateNotifBadge();
+}
+
+function updateNotifBadge() {
+  const badge = document.getElementById('notifBadge');
+  if (!badge) return;
+  badge.style.display = hasUnread ? 'block' : 'none';
 }
 
 // Smart Suggestions UI
@@ -518,8 +526,8 @@ async function refreshSuggestions() {
     updateStat('resumesCount', stats.resumes, "resume files found");
 
     if (stats.messy > 0 || stats.duplicates > 0 || stats.large > 0) {
-      const badge = document.getElementById('notifBadge');
-      if (badge) badge.style.display = 'block';
+      hasUnread = true;
+      updateNotifBadge();
     }
 
     // Auto-collapse if session already has it collapsed
@@ -918,7 +926,7 @@ async function approveAction() {
 }
 
 function cancelAction() {
-  document.getElementById('smartActionFlow').style.display = 'none';
+  document.getElementById('smartActionFlow').classList.add('hide');
   currentPreview = [];
   addMessage("Action cancelled.", 'ai');
 }
