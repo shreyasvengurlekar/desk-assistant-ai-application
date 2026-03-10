@@ -1,6 +1,7 @@
 const { askOllama } = require("./ollamaAI");
 const path = require("path");
 const fs = require("fs");
+const { exec } = require("child_process");
 const sqlite3 = require("sqlite3").verbose();
 let chokidar;
 try {
@@ -517,9 +518,6 @@ ipcMain.handle("file:delete", async (event, filePath) => {
       `, ["Delete", path.basename(filePath), "Recycle Bin", filePath]);
 
       // Add to undo store
-      // Note: Truly undoing a trash operation via Electron/Node is complex.
-      // We can't easily programmatically restore from trash, but we can log it.
-      // For now, we'll mark it in undo store so UI can show the button.
       setLastRenameActions([{
         type: "delete",
         from: filePath,
@@ -530,6 +528,65 @@ ipcMain.handle("file:delete", async (event, filePath) => {
     }
   } catch (err) {
     console.error("File Delete Error:", err);
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("file:restore", async (event, filePath) => {
+  try {
+    if (!filePath || typeof filePath !== 'string') return { error: "Invalid path" };
+    
+    // Check if the file already exists (unlikely if we just deleted it)
+    if (fs.existsSync(filePath)) {
+      return { error: "File already exists at original location." };
+    }
+
+    const originalDir = path.dirname(filePath);
+    const originalName = path.basename(filePath);
+
+    // PowerShell script to restore from Recycle Bin
+    const psScript = `
+      $shell = New-Object -ComObject Shell.Application;
+      $recycleBin = $shell.Namespace(0x0a);
+      $item = $recycleBin.Items() | Where-Object { 
+        $recycleBin.GetDetailsOf($_, 1) -eq '${originalDir}' -and $_.Name -eq '${originalName}' 
+      } | Select-Object -First 1;
+      if ($item) {
+        $verb = $item.Verbs() | Where-Object { $_.Name.Replace('&','') -eq 'Restore' };
+        if ($verb) {
+          $verb.DoIt();
+          Write-Output "Restored"
+        } else {
+          Write-Error 'Restore verb not found'
+        }
+      } else {
+        Write-Error 'No file found in Recycle Bin'
+      }
+    `;
+
+    return new Promise((resolve) => {
+      const child = exec(`powershell -Command "${psScript.replace(/\n/g, ' ')}"`, async (error, stdout, stderr) => {
+        if (error || stderr) {
+          console.error("Restore Error:", error || stderr);
+          return resolve({ error: "I couldn't restore this file." });
+        }
+        
+        if (stdout.includes("Restored")) {
+          // Log undo in activity log
+          await runQuery(`
+            INSERT INTO activity_log (type, old_name, new_name, file_path)
+            VALUES (?, ?, ?, ?)
+          `, ["Undo", "Recycle Bin", originalName, filePath]);
+
+          resolve({ success: true });
+        } else {
+          resolve({ error: "I couldn't restore this file." });
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error("File Restore Error:", err);
     return { error: err.message };
   }
 });

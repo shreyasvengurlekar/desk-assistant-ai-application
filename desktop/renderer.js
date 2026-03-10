@@ -242,6 +242,11 @@ async function loadActivityLog() {
           </div>
           <div style="font-size: 13px; font-weight: 500;">${log.old_name} → ${log.new_name}</div>
           <div style="font-size: 11px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.file_path}">${log.file_path}</div>
+          ${log.type === 'Delete' ? `
+            <div style="margin-top: 10px;">
+              <button class="btn-text accent-btn mini" onclick="restoreFromLog('${log.file_path.replace(/\\/g, '\\\\')}', this)">Undo Delete</button>
+            </div>
+          ` : ''}
         </div>
         <button class="dismiss-btn" onclick="deleteActivityEntry(${log.id})" style="position: static; opacity: 0.6;">✕</button>
       `;
@@ -258,6 +263,19 @@ async function deleteActivityEntry(id) {
   if (confirm("Delete this entry?")) {
     await window.deskAI.deleteActivity(id);
     loadActivityLog();
+  }
+}
+
+async function restoreFromLog(filePath, btn) {
+  if (btn) btn.disabled = true;
+  const res = await window.deskAI.restoreFile(filePath);
+  if (res && res.success) {
+    addNotification("File restored from Recycle Bin");
+    loadActivityLog();
+    refreshSuggestions();
+  } else {
+    alert(res.error || "I couldn't restore this file.");
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -1119,16 +1137,46 @@ async function deleteFile(path) {
     const res = await window.deskAI.deleteFile(path);
     if (res && res.success) {
       addNotification("File moved to Recycle Bin");
-      addMessage(`File deleted: ${path.split(/[\\\/]/).pop()}`, 'ai');
+      const bubble = addMessage(`File deleted: ${path.split(/[\\\/]/).pop()}`, 'ai');
+      
+      // Add inline undo button for chat message
+      if (bubble) {
+        const undoLink = document.createElement('button');
+        undoLink.className = 'btn-text accent-btn';
+        undoLink.innerText = 'Undo Delete';
+        undoLink.style.display = 'block';
+        undoLink.style.marginTop = '8px';
+        undoLink.onclick = async () => {
+          const restoreRes = await window.deskAI.restoreFile(path);
+          if (restoreRes && restoreRes.success) {
+            addMessage(`File restored: ${path.split(/[\\\/]/).pop()}`, 'ai');
+            undoLink.remove();
+            refreshSuggestions();
+            loadActivityLog();
+          } else {
+            addMessage(restoreRes.error || "I couldn't restore this file.", 'ai');
+          }
+        };
+        bubble.appendChild(undoLink);
+      }
+
       refreshSuggestions();
       
-      // Show Undo UI with explanation for delete
+      // Show Global Undo UI
       showUndoUI(true);
       const undoBtn = document.getElementById('undoBtn');
       if (undoBtn) {
-        undoBtn.onclick = () => {
-          alert("For safety, please restore the file manually from the Recycle Bin.");
-          document.getElementById('smartActionFlow').style.display = 'none';
+        undoBtn.onclick = async () => {
+          const restoreRes = await window.deskAI.restoreFile(path);
+          if (restoreRes && restoreRes.success) {
+            addNotification("File restored");
+            addMessage(`File restored: ${path.split(/[\\\/]/).pop()}`, 'ai');
+            document.getElementById('smartActionFlow').style.display = 'none';
+            refreshSuggestions();
+            loadActivityLog();
+          } else {
+            addMessage(restoreRes.error || "I couldn't restore this file.", 'ai');
+          }
         };
       }
     } else if (res && res.error) {
