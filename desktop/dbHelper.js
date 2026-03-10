@@ -92,9 +92,19 @@ function getQuery(sql, params = []) {
   });
 }
 
+function deleteActivityLog(id) {
+  return runQuery("DELETE FROM activity_log WHERE id = ?", [id]);
+}
+
+function clearActivityLog() {
+  return runQuery("DELETE FROM activity_log");
+}
+
 module.exports = {
   initDatabase,
   runQuery,
   allQuery,
-  getQuery
+  getQuery,
+  deleteActivityLog,
+  clearActivityLog
 };

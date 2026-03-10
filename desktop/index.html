@@ -81,23 +81,28 @@
 
       <!-- Dashboard Page -->
       <section id="dashboardPage" class="page">
-        <div class="dashboard-header">
+        <div class="dashboard-header" id="dashboardHeader">
           <div class="dashboard-card">
-            <div class="logo-container large">
-              <img src="assets/icon.png" alt="Logo" class="logo">
-            </div>
-            <div class="greeting-content">
-              <h2>Good to see you!</h2>
-              <p>
-                I'm your Desk Assistant. I'll show you a preview of every action before making changes.
-              </p>
-              <div class="quick-actions">
-                <button class="pill-btn" onclick="handleQuickAction('downloads')">Organize Downloads</button>
-                <button class="pill-btn" onclick="handleQuickAction('duplicates')">Duplicates</button>
-                <button class="pill-btn" onclick="handleQuickAction('largeFiles')">Large Files</button>
-                <button class="pill-btn" onclick="handleQuickAction('resume')">Resume</button>
+            <div class="header-main-content">
+              <div class="logo-container large" id="headerLogoContainer">
+                <img src="assets/icon.png" alt="Logo" class="logo">
+              </div>
+              <div class="greeting-content">
+                <h2 id="greetingTitle">Good to see you!</h2>
+                <p id="greetingText">
+                  I'm your Desk Assistant. I'll show you a preview of every action before making changes.
+                </p>
+                <div class="quick-actions" id="headerQuickActions">
+                  <button class="pill-btn" onclick="handleQuickAction('downloads')">Organize Downloads</button>
+                  <button class="pill-btn" onclick="handleQuickAction('duplicates')">Duplicates</button>
+                  <button class="pill-btn" onclick="handleQuickAction('largeFiles')">Large Files</button>
+                  <button class="pill-btn" onclick="handleQuickAction('resume')">Resume</button>
+                </div>
               </div>
             </div>
+            <button id="headerToggleBtn" class="header-toggle-btn" onclick="toggleHeader()" title="Toggle Header">
+              <span class="toggle-icon">▲</span>
+            </button>
           </div>
         </div>
 
@@ -262,6 +267,9 @@
                   </div>
                   <label class="checkbox-item danger-text">
                     <input type="checkbox" id="scanFull"> Entire Computer
+                  </label>
+                  <label class="checkbox-item" style="margin-top: 8px; font-size: 11px;">
+                    <input type="checkbox" id="prefSkipFullScanConfirm"> Don't ask again for full scan confirmation
                   </label>
                 </div>
               </div>

@@ -15,7 +15,7 @@ const { buildPdfRenamePreview } = require("./renamePreview");
 const { applyRenameActions, undoRenameActions } = require("./renameExecutor");
 const { setLastRenameActions, getLastRenameActions, clearLastRenameActions } = require("./undoStore");
 const { askGemini } = require("./gemini");
-const { initDatabase, runQuery, allQuery, getQuery } = require("./dbHelper");
+const { initDatabase, runQuery, allQuery, getQuery, deleteActivityLog, clearActivityLog } = require("./dbHelper");
 const {
   app,
   BrowserWindow,
@@ -397,7 +397,9 @@ ipcMain.handle("app:isPackaged", () => app.isPackaged);
 
 ipcMain.handle("scan:files", async () => {
   try {
-    const data = scanFolders();
+    const scanFullRow = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["scanFull"]);
+    const scanFull = scanFullRow ? JSON.parse(scanFullRow.value) : false;
+    const data = scanFolders(scanFull);
     return data;
   } catch (err) {
     return { error: err.message };
@@ -406,7 +408,9 @@ ipcMain.handle("scan:files", async () => {
 
 ipcMain.handle("rename:preview:pdf", async () => {
   try {
-    const data = scanFolders();
+    const scanFullRow = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["scanFull"]);
+    const scanFull = scanFullRow ? JSON.parse(scanFullRow.value) : false;
+    const data = scanFolders(scanFull);
     const preview = buildPdfRenamePreview(data.pdf);
     return { preview };
   } catch (err) {
@@ -457,6 +461,24 @@ ipcMain.handle("db:get-activity-log", async (event, filter = "all") => {
   } catch (err) {
     console.error("DB Log Error:", err);
     return [];
+  }
+});
+
+ipcMain.handle("db:delete-activity", async (event, id) => {
+  try {
+    return await deleteActivityLog(id);
+  } catch (err) {
+    console.error("DB Delete Error:", err);
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("db:clear-activity", async () => {
+  try {
+    return await clearActivityLog();
+  } catch (err) {
+    console.error("DB Clear Error:", err);
+    return { error: err.message };
   }
 });
 
@@ -521,31 +543,48 @@ ipcMain.handle("settings:get", async (event, key) => {
 
 ipcMain.handle("system:get-stats", async () => {
   try {
-    const data = scanFolders();
+    const scanFullRow = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["scanFull"]);
+    const scanFull = scanFullRow ? JSON.parse(scanFullRow.value) : false;
+    const data = scanFolders(scanFull);
     const allFiles = (data && data.all) ? data.all : [];
 
     // Improved Duplicate detection
     const seen = new Map();
-    const duplicates = [];
+    let duplicatesCount = 0;
     allFiles.forEach(f => {
       if (f && f.name && f.size !== undefined) {
-        // Normalize name: remove " - Copy", " (1)", etc.
         const normalizedName = f.name.replace(/\s-\sCopy|\s\(\d+\)|copy|duplicate/gi, '').toLowerCase();
         const key = `${normalizedName}-${f.size}`;
-        if (seen.has(key)) duplicates.push(f);
+        if (seen.has(key)) duplicatesCount++;
         else seen.set(key, true);
       }
     });
 
-    // Messy files detection (simple regex)
+    // Messy files detection
     const messyRegex = /[0-9]{8,}|copy|untit|whatsapp|img_[0-9]|final_final/i;
-    const messyFiles = allFiles.filter(f => f && f.name && messyRegex.test(f.name));
+    const messyFiles = allFiles.filter(f => f && f.name && (messyRegex.test(f.name) || f.name.includes(' (')));
 
-    // Large files (> 500MB)
-    const largeFiles = allFiles.filter(f => f && f.size > 500 * 1024 * 1024);
+    // Large files threshold from settings
+    const setting = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["prefLargeThreshold"]);
+    let threshold = 500 * 1024 * 1024; // 500MB default
+    if (setting) {
+      const val = JSON.parse(setting.value);
+      if (val === 'custom') {
+        const customVal = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["customSizeVal"]);
+        const customUnit = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["customSizeUnit"]);
+        if (customVal && customUnit) {
+          const num = parseFloat(JSON.parse(customVal.value));
+          const unit = JSON.parse(customUnit.value);
+          threshold = num * (unit === 'GB' ? 1024 * 1024 * 1024 : 1024 * 1024);
+        }
+      } else {
+        threshold = parseInt(val) * 1024 * 1024;
+      }
+    }
+    const largeFiles = allFiles.filter(f => f && f.size > threshold);
 
-    // Improved Resume detection (includes .doc, .docx, .txt)
-    const resumeKeywords = ['resume', 'cv', 'biodata', 'profile', 'remune'];
+    // Improved Resume detection
+    const resumeKeywords = ['resume', 'cv', 'biodata', 'profile'];
     const resumeExtensions = ['.pdf', '.doc', '.docx', '.txt'];
     const resumes = allFiles.filter(f => {
       if (!f || !f.name) return false;
@@ -558,7 +597,7 @@ ipcMain.handle("system:get-stats", async () => {
       files: allFiles.length,
       pdfCount: (data && data.pdf) ? data.pdf.length : 0,
       messy: messyFiles.length,
-      duplicates: duplicates.length,
+      duplicates: duplicatesCount,
       large: largeFiles.length,
       resumes: resumes.length
     };
@@ -578,35 +617,89 @@ ipcMain.handle("system:get-stats", async () => {
 
 ipcMain.handle("action:quick", async (event, action, query = '') => {
   try {
-    const data = scanFolders();
-    if (!data) throw new Error("Could not access files.");
+    const scanFullRow = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["scanFull"]);
+    const scanFull = scanFullRow ? JSON.parse(scanFullRow.value) : false;
+    const data = scanFolders(scanFull);
+    
+    if (!data) return { error: "Could not access files." };
     const allFiles = (data && data.all) ? data.all : [];
 
     if (action === "downloads" || action === "desktop" || action === "both") {
-      const pdfs = (data && data.pdf) ? data.pdf : [];
-      const preview = buildPdfRenamePreview(pdfs);
-      return { preview: preview || [] };
+      let filesToProcess = [];
+      if (action === "downloads") filesToProcess = data.downloads || [];
+      else if (action === "desktop") filesToProcess = data.desktop || [];
+      else filesToProcess = [...(data.downloads || []), ...(data.desktop || [])];
+
+      // Build rename previews
+      const preview = buildPdfRenamePreview(filesToProcess);
+      
+      // Filter for issues (messy names, duplicates, old, large)
+      const issues = filesToProcess.filter(f => {
+        const analysis = analyzeFile(f.path, f);
+        return analysis.messy || analysis.type === 'installer' || f.size > 100 * 1024 * 1024; // >100MB as "issue" for organization
+      });
+
+      // Also identify potential groupings/folders
+      const groups = new Map();
+      filesToProcess.forEach(f => {
+        const ext = path.extname(f.name).toLowerCase();
+        if (['.jpg', '.jpeg', '.png', '.gif'].includes(ext)) {
+          if (!groups.has('Images')) groups.set('Images', []);
+          groups.get('Images').push(f);
+        } else if (['.pdf', '.doc', '.docx', '.txt'].includes(ext)) {
+          if (!groups.has('Documents')) groups.set('Documents', []);
+          groups.get('Documents').push(f);
+        }
+      });
+
+      const folderSuggestions = Array.from(groups.entries()).map(([name, files]) => ({
+        type: 'grouping',
+        name: name,
+        count: files.length,
+        files: files.slice(0, 3).map(f => f.name)
+      }));
+
+      return { preview: issues.length > 0 ? preview : [], folderSuggestions: issues.length > 0 ? folderSuggestions : [] };
     } 
     
     else if (action === "duplicates") {
       const seen = new Map();
-      const duplicates = [];
+      const duplicateGroups = [];
+      
       allFiles.forEach(f => {
         if (!f || !f.name || f.size === undefined) return;
-        // Normalize name for duplicate detection
         const normalizedName = f.name.replace(/\s-\sCopy|\s\(\d+\)|copy|duplicate/gi, '').toLowerCase();
         const key = `${normalizedName}-${f.size}`;
+        
         if (seen.has(key)) {
-          duplicates.push({ ...f, type: 'duplicate', reason: 'Filename and size match' });
+          const group = seen.get(key);
+          group.push(f);
         } else {
-          seen.set(key, true);
+          seen.set(key, [f]);
         }
       });
-      return { preview: (duplicates || []).map(f => ({ ...f, from: f.path || "unknown", to: "Duplicate found" })) };
+
+      for (const [key, files] of seen.entries()) {
+        if (files.length > 1) {
+          duplicateGroups.push({
+            id: key,
+            files: files.map(f => ({
+              ...f,
+              name: f.name,
+              path: f.path,
+              size: f.size,
+              date: f.date,
+              reason: 'Identical name/size'
+            }))
+          });
+        }
+      }
+
+      return { duplicateGroups: duplicateGroups.slice(0, 10), totalGroups: duplicateGroups.length };
     } 
     
     else if (action === "resume") {
-      const resumeKeywords = ['resume', 'cv', 'biodata', 'profile', 'remune'];
+      const resumeKeywords = ['resume', 'cv', 'biodata', 'profile'];
       const resumeExtensions = ['.pdf', '.doc', '.docx', '.txt'];
       const resumes = allFiles.filter(f => {
         if (!f || !f.name) return false;
@@ -618,16 +711,32 @@ ipcMain.handle("action:quick", async (event, action, query = '') => {
         preview: (resumes || []).map(f => ({ 
           ...f, 
           from: f.path || "unknown", 
-          to: f.name.toLowerCase().includes('remune') ? "Possible Resume" : "Resume File" 
+          to: "Possible Resume Found" 
         })) 
       };
     } 
     
     else if (action === "largeFiles") {
-      // Get threshold from settings or default
-      const threshold = 500 * 1024 * 1024; // 500MB
-      const large = allFiles.filter(f => f && f.size > threshold);
-      return { preview: (large || []).map(f => ({ ...f, from: f.path || "unknown", to: `Large file (${(f.size / (1024 * 1024)).toFixed(1)} MB)` })) };
+      const setting = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["prefLargeThreshold"]);
+      let threshold = 500 * 1024 * 1024;
+      
+      if (setting) {
+        const val = JSON.parse(setting.value);
+        if (val === 'custom') {
+          const customVal = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["customSizeVal"]);
+          const customUnit = await getQuery(`SELECT value FROM settings WHERE key = ?`, ["customSizeUnit"]);
+          if (customVal && customUnit) {
+            const num = parseFloat(JSON.parse(customVal.value));
+            const unit = JSON.parse(customUnit.value);
+            threshold = num * (unit === 'GB' ? 1024 * 1024 * 1024 : 1024 * 1024);
+          }
+        } else {
+          threshold = parseInt(val) * 1024 * 1024;
+        }
+      }
+
+      const large = allFiles.filter(f => f && f.size > threshold).sort((a, b) => b.size - a.size);
+      return { preview: (large || []).map(f => ({ ...f, from: f.path || "unknown", to: `Large file` })) };
     }
 
     else if (action === "recent") {
@@ -636,15 +745,39 @@ ipcMain.handle("action:quick", async (event, action, query = '') => {
     }
 
     else if (action === "search") {
-      const searchTerm = query.toLowerCase();
-      const results = allFiles.filter(f => f && f.name && f.name.toLowerCase().includes(searchTerm));
+      const searchTerm = query.toLowerCase().replace(/^find\s+/, '').trim();
+      const supportedExts = ['.pdf', '.doc', '.docx', '.txt', '.pptx', '.xlsx', '.jpg', '.png'];
+      
+      let results = allFiles.filter(f => {
+        if (!f || !f.name) return false;
+        const name = f.name.toLowerCase();
+        const ext = path.extname(f.name).toLowerCase();
+        const matchesName = name.includes(searchTerm);
+        const isSupported = supportedExts.includes(ext);
+        return matchesName && isSupported;
+      });
+
+      // If no exact matches, look for similar matches (fuzzy-ish)
+      if (results.length === 0) {
+        results = allFiles.filter(f => {
+          if (!f || !f.name) return false;
+          const name = f.name.toLowerCase();
+          const ext = path.extname(f.name).toLowerCase();
+          const isSupported = supportedExts.includes(ext);
+          // Split searchTerm into words and check if any word matches
+          const words = searchTerm.split(/\s+/);
+          const matchesAnyWord = words.some(word => word.length > 2 && name.includes(word));
+          return matchesAnyWord && isSupported;
+        });
+      }
+
       return { preview: results.map(f => ({ ...f, from: f.path || "unknown", to: "Search result" })) };
     }
 
     return { error: "Action not recognized" };
   } catch (err) {
     console.error("Quick Action Error:", err);
-    return { error: "Failed to process quick action." };
+    return { error: "I couldn't complete that action right now. Please try again." };
   }
 });
 

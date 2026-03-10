@@ -109,9 +109,7 @@ function formatFileSize(bytes) {
 
   if (bytes < mb) {
     const val = bytes / kb;
-    // For very small files, show at least 0.1 KB
     if (val < 0.1) return '0.1 KB';
-    // For small files < 100KB, show 1 decimal, else round
     return (val < 100 ? parseFloat(val.toFixed(1)) : Math.round(val)) + ' KB';
   } else if (bytes < gb) {
     const val = bytes / mb;
@@ -156,6 +154,31 @@ function showPage(pageId) {
   if (pageId === 'activity') loadActivityLog();
 }
 
+// Header toggle logic
+function toggleHeader(forceState) {
+  const header = document.getElementById('dashboardHeader');
+  if (!header) return;
+
+  const title = document.getElementById('greetingTitle');
+  const isCurrentlyCollapsed = header.classList.contains('collapsed');
+  const shouldCollapse = forceState !== undefined ? forceState : !isCurrentlyCollapsed;
+
+  if (shouldCollapse) {
+    header.classList.add('collapsed');
+    if (title) title.innerText = "Desk Assistant AI";
+  } else {
+    header.classList.remove('collapsed');
+    if (title) title.innerText = "Good to see you!";
+  }
+}
+
+// Auto-collapse header on small window
+window.addEventListener('resize', () => {
+  if (window.innerWidth < 800) {
+    toggleHeader(true);
+  }
+});
+
 async function loadActivityLog() {
   const filterEl = document.getElementById('logFilter');
   const filter = filterEl ? filterEl.value : 'all';
@@ -172,6 +195,19 @@ async function loadActivityLog() {
       content.innerHTML = '<div class="empty-state">No history found.</div>';
       return;
     }
+
+    // Add Clear All button at the top
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'btn-text danger';
+    clearBtn.innerText = 'Clear All History';
+    clearBtn.style.margin = '0 0 16px 10px';
+    clearBtn.onclick = async () => {
+      if (confirm("Are you sure you want to clear all activity logs?")) {
+        await window.deskAI.clearActivityLog();
+        loadActivityLog();
+      }
+    };
+    content.appendChild(clearBtn);
 
     const timeline = document.createElement('div');
     timeline.className = 'activity-timeline';
@@ -205,13 +241,21 @@ async function loadActivityLog() {
           <div style="font-size: 13px; font-weight: 500;">${log.old_name} → ${log.new_name}</div>
           <div style="font-size: 11px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.file_path}">${log.file_path}</div>
         </div>
+        <button class="dismiss-btn" onclick="deleteActivityEntry(${log.id})" style="position: static; opacity: 0.6;">✕</button>
       `;
       timeline.appendChild(entry);
     });
 
     content.appendChild(timeline);
   } catch (err) {
-    content.innerHTML = '<div class="empty-state">Failed to load activity log.</div>';
+    content.innerHTML = '<div class="empty-state">Activity log is not available right now.</div>';
+  }
+}
+
+async function deleteActivityEntry(id) {
+  if (confirm("Delete this entry?")) {
+    await window.deskAI.deleteActivity(id);
+    loadActivityLog();
   }
 }
 
@@ -275,19 +319,35 @@ function showChatHelpers() {
 function handleLocalCommand(input) {
   const cmd = input.toLowerCase().trim();
   
-  const greetings = ['hi', 'hello', 'hey', 'hello there'];
+  const greetings = ['hi', 'hello', 'hey', 'hello there', 'good morning', 'good afternoon', 'good evening'];
   if (greetings.includes(cmd)) {
-    return "Hello! How can I help you with your files today?";
+    return "Hello! I'm Desk Assistant AI. I'm here to help you manage files on your computer.";
   }
   
   if (cmd === 'thanks' || cmd === 'thank you') {
     return "You're welcome! Let me know if you need anything else.";
   }
   
-  if (cmd === 'help' || cmd === 'what can you do' || cmd === 'what can you do?') {
-    return "I can help you organize your files locally. You can ask me to organize downloads, find resume files, check for duplicates, or identify large files over your selected limit.";
+  if (['help', 'what can you do', 'what can you do?', 'what do you do', 'purpose'].some(k => cmd.includes(k))) {
+    return "I help with file search, duplicates, organization, and cleanup. You can ask me to organize downloads, find resumes, or identify large files.";
+  }
+
+  if (['who are you', 'your name', 'what is your name'].some(k => cmd.includes(k))) {
+    return "My name is Desk Assistant AI. I'm here to help you with files and folders on your computer.";
+  }
+
+  if (['who created you', 'who made you', 'author'].some(k => cmd.includes(k))) {
+    return "My creator built me to make file management easier and safer. I run 100% locally on your machine.";
   }
   
+  // Check if it's unrelated
+  const relatedKeywords = ['file', 'folder', 'organize', 'download', 'desktop', 'duplicate', 'resume', 'large', 'scan', 'clean', 'rename', 'pdf', 'doc', 'search'];
+  const isRelated = relatedKeywords.some(k => cmd.includes(k));
+  
+  if (!isRelated && cmd.split(' ').length > 2) {
+    return "I'm here to help with files, folders, searches, duplicates, and organization on your computer. Please ask me something related to your files.";
+  }
+
   return null;
 }
 
@@ -324,6 +384,9 @@ async function askAssistant() {
   if (grid && !grid.classList.contains('collapsed')) {
     toggleSuggestions();
   }
+
+  // Auto-collapse header to focus on chat
+  toggleHeader(true);
 
   // Check for local replies first
   const localReply = handleLocalCommand(input);
@@ -405,7 +468,12 @@ function sendPrompt(text) {
 // Notifications Logic
 function toggleNotifications() {
   const panel = document.getElementById('notifPanel');
-  panel.classList.toggle('active');
+  const badge = document.getElementById('notifBadge');
+  const isActive = panel.classList.toggle('active');
+  
+  if (isActive && badge) {
+    badge.style.display = 'none';
+  }
 }
 
 function addNotification(text) {
@@ -602,80 +670,27 @@ function showModal(type) {
 // Mic / Voice UI
 function togglePTT() {
   const btn = document.getElementById('micBtn');
-  const status = document.getElementById('micStatus');
+  addNotification("Voice commands will be available in a future update. Please type your command.");
   
-  if (!isListening) {
-    startSpeechRecognition();
-  } else {
-    stopSpeechRecognition();
-  }
+  // Visual feedback only
+  btn.classList.add('listening');
+  setTimeout(() => {
+    btn.classList.remove('listening');
+  }, 1000);
 }
 
+// Disable speech recognition to avoid technical errors
 function startSpeechRecognition() {
-  const btn = document.getElementById('micBtn');
-  const status = document.getElementById('micStatus');
-  const userInput = document.getElementById('userInput');
-
-  if (!('webkitSpeechRecognition' in window)) {
-    addMessage("Voice command is not available right now.", 'ai');
-    return;
-  }
-  
-  try {
-    window.recognition = new webkitSpeechRecognition();
-    window.recognition.lang = 'en-US';
-    window.recognition.continuous = false;
-    window.recognition.interimResults = false;
-
-    window.recognition.onstart = () => {
-      isListening = true;
-      btn.classList.add('listening');
-      status.innerText = "Listening...";
-    };
-
-    window.recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
-      if (userInput) userInput.value = text;
-      stopSpeechRecognition();
-    };
-
-    window.recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      if (event.error === 'not-allowed') {
-        addMessage("Microphone access required for voice commands.", 'ai');
-      } else {
-        addMessage("Voice command is not available right now.", 'ai');
-      }
-      stopSpeechRecognition();
-    };
-
-    window.recognition.onend = () => {
-      isListening = false;
-      btn.classList.remove('listening');
-      status.innerText = "";
-    };
-
-    window.recognition.start();
-  } catch (err) {
-    console.error("Failed to start speech recognition:", err);
-    addMessage("Voice command is not available right now.", 'ai');
-  }
+  addNotification("Voice commands will be available in a future update. Please type your command.");
 }
 
-function stopSpeechRecognition() {
-  if (window.recognition) {
-    try {
-      window.recognition.stop();
-    } catch (e) {}
-  }
-}
+function stopSpeechRecognition() {}
 
 // Existing Quick Action Flow (preserved)
 async function handleQuickAction(action, query = '') {
   const flow = document.getElementById('smartActionFlow');
   flow.style.display = 'none';
 
-  // Map action IDs to user-friendly display names for the chat bubble
   const actionNames = {
     'downloads': 'Organize Downloads',
     'desktop': 'Organize Desktop',
@@ -688,7 +703,6 @@ async function handleQuickAction(action, query = '') {
     'search': `Search for "${query}"`
   };
 
-  // Add user message to chat
   addMessage(actionNames[action] || action, 'user');
 
   // Auto-collapse suggestions to free space
@@ -697,41 +711,133 @@ async function handleQuickAction(action, query = '') {
     toggleSuggestions();
   }
 
-  addMessage('', 'ai', true); // Thinking indicator for scan
+  // Handle Full PC Scan confirmation
+  const scanFull = document.getElementById('scanFull')?.checked;
+  const skipConfirm = document.getElementById('prefSkipFullScanConfirm')?.checked;
+  
+  if (scanFull && !skipConfirm) {
+    const confirmed = confirm("Full computer scanning is enabled. This may take longer. Do you want to continue?");
+    if (!confirmed) {
+      addMessage("Scan cancelled.", 'ai');
+      return;
+    }
+  } else if (scanFull && skipConfirm) {
+    addMessage("Full computer scanning is enabled. This may take longer.", 'ai');
+  }
+
+  const scanningMsg = action === 'downloads' ? "Scanning your Downloads folder..." : "Scanning folders...";
+  addMessage(scanningMsg, 'ai', true);
+  
+  // Simulated progress for better UX
+  const updateProgress = (msg, delay) => {
+    setTimeout(() => {
+      const bubble = document.getElementById('thinkingBubble');
+      if (bubble) {
+        const span = bubble.querySelector('span');
+        if (span) span.innerText = msg;
+      }
+    }, delay);
+  };
+
+  updateProgress("Checking file names...", 800);
+  updateProgress("Analyzing duplicates...", 1600);
+  updateProgress("Preparing results...", 2400);
 
   try {
     const res = await window.deskAI.quickAction(action, query);
     removeThinking();
 
-    if (res.preview && res.preview.length > 0) {
-      currentPreview = res.preview;
-      
-      // Natural messages for quick actions
-      const messages = {
-        'downloads': "I've analyzed your Downloads folder and found these items to organize:",
-        'desktop': "I've scanned your Desktop and found these items that could be organized:",
-        'both': "I've checked both your Desktop and Downloads for items to organize:",
-        'duplicates': `I've detected ${res.preview.length} duplicate files in your folders:`,
-        'largeFiles': `I found these large files that exceed your threshold:`,
-        'resume': `I've located these possible resume files:`,
-        'cleanDesktop': "Here are the items I suggest cleaning from your desktop:",
-        'recent': "Here are your most recently modified files:"
-      };
-      
-      const displayMsg = messages[action] || `I found ${res.preview.length} items. Here they are:`;
+    if (res.duplicateGroups && res.duplicateGroups.length > 0) {
+      const displayMsg = `I've detected ${res.totalGroups} duplicate file groups. Showing the first 5:`;
       const aiMsg = addMessage(displayMsg, 'ai');
       
       const cardContainer = document.createElement('div');
       cardContainer.className = 'chat-result-grid';
 
-      res.preview.forEach(file => {
+      res.duplicateGroups.slice(0, 5).forEach(group => {
+        group.files.forEach(file => {
+          const card = createFileCard(file, 'duplicates');
+          cardContainer.appendChild(card);
+        });
+      });
+
+      aiMsg.appendChild(cardContainer);
+      
+      if (res.totalGroups > 5) {
+        const moreBtn = document.createElement('button');
+        moreBtn.className = 'btn-text';
+        moreBtn.innerText = "More results available. Click to view all in Activity.";
+        moreBtn.onclick = () => showPage('activity');
+        aiMsg.appendChild(moreBtn);
+      }
+    } else if (res.preview && res.preview.length > 0) {
+      currentPreview = res.preview;
+      
+      const messages = {
+        'downloads': "I've analyzed your Downloads folder and found these items to organize:",
+        'desktop': "I've scanned your Desktop and found these items that could be organized:",
+        'both': "I've checked both your Desktop and Downloads for items to organize:",
+        'duplicates': `I've detected ${res.preview.length} duplicate files:`,
+        'largeFiles': `I found these large files:`,
+        'resume': `I've located these possible resume files:`,
+        'cleanDesktop': "Here are the items I suggest cleaning from your desktop:",
+        'recent': "Here are your most recently modified files:",
+        'search': `I found ${res.preview.length} matches for "${query}":`
+      };
+      
+      const displayMsg = messages[action] || `I found ${res.preview.length} items:`;
+      const aiMsg = addMessage(displayMsg, 'ai');
+      
+      const cardContainer = document.createElement('div');
+      cardContainer.className = 'chat-result-grid';
+
+      // Show only first 5
+      res.preview.slice(0, 5).forEach(file => {
         const card = createFileCard(file, action);
         cardContainer.appendChild(card);
       });
 
       aiMsg.appendChild(cardContainer);
+
+      if (res.preview.length > 5) {
+        const moreBtn = document.createElement('button');
+        moreBtn.className = 'btn-text';
+        moreBtn.style.marginTop = '10px';
+        moreBtn.innerText = "More results available. Click Show More.";
+        moreBtn.onclick = () => {
+          moreBtn.remove();
+          res.preview.slice(5).forEach(file => {
+            const card = createFileCard(file, action);
+            cardContainer.appendChild(card);
+          });
+        };
+        aiMsg.appendChild(moreBtn);
+      }
+
+      // Handle folder suggestions
+      if (res.folderSuggestions && res.folderSuggestions.length > 0) {
+        const folderMsg = addMessage("I also suggest grouping these files into folders:", 'ai');
+        const folderGrid = document.createElement('div');
+        folderGrid.className = 'chat-result-grid';
+        
+        res.folderSuggestions.forEach(s => {
+          const card = document.createElement('div');
+          card.className = 'file-result-card';
+          card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📁</span>
+              <div>
+                <div style="font-weight: 600; font-size: 14px;">${s.name} Group</div>
+                <div style="font-size: 11px; color: var(--muted);">${s.count} files (e.g., ${s.files.join(', ')})</div>
+              </div>
+            </div>
+            <button class="card-btn mini success" style="margin-top: 8px;">Move All</button>
+          `;
+          folderGrid.appendChild(card);
+        });
+        folderMsg.appendChild(folderGrid);
+      }
       
-      // Only show action flow if it's an actionable preview (like renames)
       if (action.includes('downloads') || action.includes('desktop') || action.includes('both')) {
         flow.style.display = 'flex';
       }
@@ -740,16 +846,17 @@ async function handleQuickAction(action, query = '') {
         'downloads': "Your Downloads folder already looks organized.",
         'desktop': "Your Desktop is already clean! No cluttered files found to organize.",
         'duplicates': "No duplicate files found.",
-        'largeFiles': "I couldn't find any files above your selected size limit.",
-        'resume': "I could not find any resume files.",
-        'cleanDesktop': "Your desktop already looks organized."
+        'largeFiles': "I couldn't find any large files.",
+        'resume': "No resume related files found.",
+        'cleanDesktop': "Your desktop already looks organized.",
+        'search': `No matches found for "${query}".`
       };
       addMessage(emptyMessages[action] || res.error || "I couldn't find any matching files.", 'ai');
     }
   } catch (err) {
     removeThinking();
     console.error("Quick Action Error:", err);
-    addMessage("I could not complete that action right now.", 'ai');
+    addMessage("I couldn't complete that action right now. Please try again.", 'ai');
   }
 }
 
@@ -757,8 +864,8 @@ function createFileCard(file, type) {
   const card = document.createElement('div');
   card.className = 'file-result-card';
 
-  const fileName = file.name || path.basename(file.from || file.path || '');
   const filePath = file.path || file.from || '';
+  const fileName = file.name || filePath.split(/[\\\/]/).pop() || '';
   const fileSize = formatFileSize(file.size);
   const fileDate = file.date ? new Date(file.date).toLocaleDateString() : 'Unknown date';
 
@@ -989,9 +1096,34 @@ async function loadSettings() {
     const scanFull = await window.deskAI.getSetting('scanFull');
     if (scanFull !== null) document.getElementById('scanFull').checked = scanFull;
 
+    const skipFullScanConfirm = await window.deskAI.getSetting('prefSkipFullScanConfirm');
+    if (skipFullScanConfirm !== null) document.getElementById('prefSkipFullScanConfirm').checked = skipFullScanConfirm;
+
+    // Attach event listeners to save settings on change
+    const inputs = document.querySelectorAll('#preferencesPage input, #preferencesPage select');
+    inputs.forEach(input => {
+      input.addEventListener('change', (e) => {
+        const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        saveSetting(e.target.id, val);
+      });
+    });
+
   } catch (err) {
     console.error("Failed to load settings:", err);
     addNotification("Settings could not be loaded. Using defaults.");
+  }
+}
+
+async function updateAppVersion() {
+  try {
+    const version = await window.deskAI.getVersion();
+    const versionEls = ['footerVersion', 'version'];
+    versionEls.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = `v${version}`;
+    });
+  } catch (err) {
+    console.error("Failed to fetch version:", err);
   }
 }
 
@@ -999,33 +1131,28 @@ async function loadSettings() {
 window.addEventListener("DOMContentLoaded", async () => {
   const savedTheme = localStorage.getItem('theme') || 'light';
   document.documentElement.setAttribute('data-theme', savedTheme);
+  document.body.setAttribute('data-theme', savedTheme);
   
+  // Initialize UI components
   showPage('dashboard');
-  startOllamaSetup();
-  startTour();
-  refreshSuggestions();
-  testOllamaStatus();
   
+  // Initial header state based on window size
+  if (window.innerWidth < 800) {
+    toggleHeader(true);
+  }
+
+  showChatHelpers();
+  startTour();
+  testOllamaStatus();
+  startOllamaSetup();
   await loadSettings();
+  refreshSuggestions();
+  updateAppVersion();
 
-  // Quick Action Helpers
-function reviewMessyNames() {
-  handleQuickAction('downloads'); // Or a specific messy name scan if available
-}
+  // Auto-refresh stats periodically
+  setInterval(refreshSuggestions, 30000);
 
-function findDuplicates() {
-  handleQuickAction('duplicates');
-}
-
-function showLargeFiles() {
-  handleQuickAction('largeFiles');
-}
-
-function findMyResume() {
-  handleQuickAction('resume');
-}
-
-// Initial Greeting & Helpers
+  // Initial Greeting & Helpers
   setTimeout(() => {
     const chat = document.getElementById('chatMessages');
     if (chat && chat.children.length === 0) {
@@ -1106,6 +1233,23 @@ function findMyResume() {
   });
 });
 
+// Quick Action Helpers
+function reviewMessyNames() {
+  handleQuickAction('downloads'); // Or a specific messy name scan if available
+}
+
+function findDuplicates() {
+  handleQuickAction('duplicates');
+}
+
+function showLargeFiles() {
+  handleQuickAction('largeFiles');
+}
+
+function findMyResume() {
+  handleQuickAction('resume');
+}
+
 // Global exposure
 window.showPage = showPage;
 window.sendPrompt = sendPrompt;
@@ -1126,6 +1270,10 @@ window.skipTour = skipTour;
 window.startTour = startTour;
 window.testOllamaStatus = testOllamaStatus;
 window.openOllamaWebsite = openOllamaWebsite;
+window.reviewMessyNames = reviewMessyNames;
+window.findDuplicates = findDuplicates;
+window.showLargeFiles = showLargeFiles;
+window.findMyResume = findMyResume;
 window.toggleTheme = () => {
   const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', t);

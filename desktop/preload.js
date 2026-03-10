@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld("deskAI", {
   
   // Activity Log
   getActivityLog: (filter) => ipcRenderer.invoke("db:get-activity-log", filter),
+  deleteActivity: (id) => ipcRenderer.invoke("db:delete-activity", id),
+  clearActivityLog: () => ipcRenderer.invoke("db:clear-activity"),
   
   // App Info & Stats
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
