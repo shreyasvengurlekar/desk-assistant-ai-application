@@ -557,10 +557,10 @@ ipcMain.handle("file:restore", async (event, filePath) => {
           $verb.DoIt();
           Write-Output "Restored"
         } else {
-          Write-Error 'Restore verb not found'
+          Write-Output 'Restore verb not found'
         }
       } else {
-        Write-Error 'No file found in Recycle Bin'
+        Write-Output 'No file found in Recycle Bin'
       }
     `;
 
