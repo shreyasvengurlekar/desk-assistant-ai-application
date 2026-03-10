@@ -425,12 +425,26 @@
     <!-- Onboarding Tour -->
     <div id="onboardingOverlay" class="onboarding-overlay" style="display: none;">
       <div class="onboarding-card">
-        <div id="onboardingStepContent">
-          <!-- Step content will be injected here -->
+        <!-- Header with Logo, Title, and Step Indicator -->
+        <div class="onboarding-header">
+          <div class="logo-container">
+            <img src="assets/icon.png" alt="Logo" class="logo">
+          </div>
+          <h2 id="tourTitle">Welcome</h2>
+          <div class="onboarding-step-indicator" id="tourStepIndicator">Step 1 of 5</div>
         </div>
+
+        <!-- Step Description Content -->
+        <div class="setup-step" id="onboardingStepContent">
+          <p>Loading tour content...</p>
+        </div>
+
+        <!-- Footer with Buttons -->
         <div class="onboarding-footer">
-          <button id="skipTour" class="btn-text" onclick="skipTour()">Skip Tour</button>
-          <button id="nextStep" class="btn-primary" onclick="nextTourStep()">Next</button>
+          <div class="tour-btn-group">
+            <button id="skipTour" class="btn-tour-skip" onclick="skipTour()">Skip Tour</button>
+            <button id="nextStep" class="btn-tour-next" onclick="nextTourStep()">Next</button>
+          </div>
         </div>
       </div>
     </div>

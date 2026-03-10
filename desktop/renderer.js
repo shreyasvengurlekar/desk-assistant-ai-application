@@ -1,5 +1,3 @@
-// renderer.js
-
 let currentPreview = [];
 let selectedFiles = new Set();
 let isListening = false;
@@ -10,35 +8,23 @@ let isOllamaReady = false;
 const tourSteps = [
   {
     title: "Welcome to Desk Assistant AI",
-    content: "Your professional productivity partner for file management and organization.",
+    content: "Your professional productivity partner for intelligent file management, organization, and workspace optimization powered by local AI.",
   },
   {
-    title: "Privacy First",
-    content: "Your files stay on your device. All scanning and analysis happen 100% locally on your machine. No cloud uploads.",
+    title: "Privacy First, Always Local",
+    content: "Your files stay on your device. All scanning and AI analysis happen 100% locally on your machine. No data ever leaves your computer.",
   },
   {
-    title: "Choose Scan Folders",
-    content: "By default, I scan Desktop, Downloads, and Documents. You can also add Pictures, Videos, or the entire computer in Settings.",
+    title: "Smart File Organization",
+    content: "Get AI-powered suggestions to organize messy file names, find duplicates, identify large files, and manage your workspace efficiently.",
   },
   {
-    title: "Smarter Scanning",
-    content: "Note that scanning your entire computer will be more comprehensive but slower than scanning selected folders.",
+    title: "Preview Before Action",
+    content: "I always show you a detailed preview before making any file changes. Everything is undoable, so you're always in control.",
   },
   {
-    title: "Approval System",
-    content: "I always show a preview before important file actions. Nothing changes without your explicit approval, and everything is undoable.",
-  },
-  {
-    title: "AI Chat & Search",
-    content: "Find files using natural language. Try: 'Find the invoice from last Tuesday' or 'Organize my downloads'.",
-  },
-  {
-    title: "Voice Commands",
-    content: "Use the mic button for English push-to-talk voice commands. I'll listen and type for you.",
-  },
-  {
-    title: "Settings & Personalization",
-    content: "Customize themes, enable real-time monitoring, or set file size thresholds in the Preferences section.",
+    title: "Let's Get Started",
+    content: "You're all set! Navigate to any section using the sidebar, or adjust preferences to customize your experience.",
   }
 ];
 
@@ -46,34 +32,51 @@ function startTour() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!localStorage.getItem('hasSeenTour') || tourStep > 0) {
     overlay.style.display = 'flex';
-    overlay.style.opacity = '0';
-    setTimeout(() => overlay.style.opacity = '1', 10);
+    // Trigger animation
+    setTimeout(() => {
+      overlay.style.opacity = '1';
+    }, 10);
     updateTourStep();
   }
 }
 
 function updateTourStep() {
   const step = tourSteps[tourStep];
-  const content = document.getElementById('onboardingStepContent');
-  if (!content) return;
+  if (!step) return;
 
-  content.innerHTML = `
-    <div class="setup-step" style="text-align: center; animation: fadeIn 0.3s ease-out;">
-      <div class="logo-container large" style="margin: 0 auto 20px;">
-        <img src="assets/icon.png" alt="Logo" class="logo">
-      </div>
-      <h2 style="margin-bottom: 12px; color: var(--text);">${step.title}</h2>
-      <p style="color: var(--muted); line-height: 1.6;">${step.content}</p>
-    </div>
-  `;
-
+  // Update header
+  const titleEl = document.getElementById('tourTitle');
+  const indicatorEl = document.getElementById('tourStepIndicator');
+  const contentEl = document.getElementById('onboardingStepContent');
   const nextBtn = document.getElementById('nextStep');
+  const skipBtn = document.getElementById('skipTour');
+
+  if (titleEl) titleEl.innerText = step.title;
+  if (indicatorEl) indicatorEl.innerText = `Step ${tourStep + 1} of ${tourSteps.length}`;
+
+  // Update content with animation
+  if (contentEl) {
+    contentEl.style.opacity = '0';
+    setTimeout(() => {
+      contentEl.innerHTML = `<p>${step.content}</p>`;
+      contentEl.style.opacity = '1';
+      contentEl.style.transition = 'opacity 0.3s ease-out';
+    }, 150);
+  }
+
+  // Update button text on last step
   if (tourStep === tourSteps.length - 1) {
-    nextBtn.innerText = "Get Started";
-    nextBtn.className = "btn-primary";
+    if (nextBtn) nextBtn.innerText = "Finish";
   } else {
-    nextBtn.innerText = "Next Step";
-    nextBtn.className = "btn-primary";
+    if (nextBtn) nextBtn.innerText = "Next";
+  }
+
+  // Ensure buttons work (reattach event listeners in case)
+  if (nextBtn) {
+    nextBtn.onclick = nextTourStep;
+  }
+  if (skipBtn) {
+    skipBtn.onclick = skipTour;
   }
 }
 
