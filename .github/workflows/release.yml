@@ -33,10 +33,13 @@ jobs:
       - name: Build installer (NSIS)
         run: npx electron-builder --publish never
 
-      - name: Upload installer to GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             desktop/dist/*.exe
             desktop/dist/latest.yml
             desktop/dist/*.blockmap
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
