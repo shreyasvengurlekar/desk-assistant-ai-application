@@ -325,8 +325,9 @@ function handleLocalCommand(input) {
     return "Hello! I'm Desk Assistant AI. I'm here to help you manage files on your computer.";
   }
   
-  if (cmd === 'thanks' || cmd === 'thank you') {
-    return "You're welcome! Let me know if you need anything else.";
+  const thanksKeywords = ['thanks', 'thank you', 'thankyou'];
+  if (thanksKeywords.includes(cmd)) {
+    return "You're welcome! Let me know if you need help with your files.";
   }
   
   if (['help', 'what can you do', 'what can you do?', 'what do you do', 'purpose'].some(k => cmd.includes(k))) {

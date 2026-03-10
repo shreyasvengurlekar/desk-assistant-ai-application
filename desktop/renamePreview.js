@@ -29,7 +29,13 @@ function cleanBaseName(name) {
 function buildPdfRenamePreview(pdfPaths) {
   const preview = [];
 
-  for (const fullPath of pdfPaths) {
+  for (const item of pdfPaths) {
+    // Normalize path from either string or object with .path
+    const fullPath = typeof item === "string" ? item : item?.path;
+
+    // Skip invalid items safely
+    if (!fullPath || typeof fullPath !== "string") continue;
+
     const dir = path.dirname(fullPath);
     const ext = path.extname(fullPath); // .pdf
     const base = path.basename(fullPath, ext);
