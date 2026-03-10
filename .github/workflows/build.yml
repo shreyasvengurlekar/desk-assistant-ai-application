@@ -29,8 +29,8 @@ jobs:
         working-directory: desktop
         run: npx electron-builder --publish never
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Create / Update GitHub Release
+        uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
