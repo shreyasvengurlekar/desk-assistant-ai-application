@@ -799,16 +799,53 @@ button, .card-btn, .pill-btn, .send-btn, .btn-primary, .btn-secondary {
   width: 100%;
 }
 
-.smart-action-flow {
+#undoBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 700;
+  font-size: 14px;
   display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 8px;
-  background: var(--bg);
-  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  animation: slideUpFade 0.3s ease-out;
+}
+
+#undoBtn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+#undoBtn::before {
+  content: "↺";
+  font-size: 18px;
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.smart-action-flow {
+  display: none;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-radius: 16px;
   border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  width: fit-content;
-  margin: 0 auto;
+  box-shadow: var(--shadow-lg);
+  position: absolute;
+  bottom: calc(100% + 12px); /* Position above chat-bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  align-items: center;
+  pointer-events: auto; /* Ensure it's clickable */
+  white-space: nowrap;
 }
 
 .hide {
@@ -826,10 +863,66 @@ button, .card-btn, .pill-btn, .send-btn, .btn-primary, .btn-secondary {
   gap: 12px;
   box-shadow: var(--shadow);
   transition: transform 0.2s;
+  width: 100%;
 }
 
 .file-result-card:hover {
-  transform: scale(1.01);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent);
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.file-path {
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-all;
+  background: var(--bg);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+}
+
+.file-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--muted2);
+  font-weight: 500;
+}
+
+.file-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.file-actions button {
+  flex: 1;
+  min-width: 80px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+  font-style: italic;
+  background: var(--ai-bubble);
+  border-radius: 12px;
+  width: 100%;
 }
 
 /* Bottom Area */
@@ -842,6 +935,7 @@ button, .card-btn, .pill-btn, .send-btn, .btn-primary, .btn-secondary {
   flex-direction: column;
   gap: 8px;
   z-index: 100;
+  position: relative; /* Ensure children can be positioned relative to this */
 }
 
 .chat-container {

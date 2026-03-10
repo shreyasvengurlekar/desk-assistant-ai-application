@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld("deskAI", {
   openFile: (filePath) => ipcRenderer.invoke("file:open", filePath),
   openLocation: (filePath) => ipcRenderer.invoke("file:open-location", filePath),
   deleteFile: (filePath) => ipcRenderer.invoke("file:delete", filePath),
+  renameFile: (filePath, newName) => ipcRenderer.invoke("file:rename", { filePath, newName }),
+  moveFile: (filePath, targetDir) => ipcRenderer.invoke("file:move", { filePath, targetDir }),
   mergePdfs: (filePaths) => ipcRenderer.invoke("file:merge-pdfs", filePaths),
   
   // Activity Log

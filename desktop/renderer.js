@@ -445,6 +445,18 @@ function showChatHelpers() {
 function handleLocalCommand(input) {
   const cmd = input.toLowerCase().trim();
   
+  // File Commands Detection
+  const fileCommands = ['find', 'search', 'delete', 'rename', 'open', 'move'];
+  const firstWord = cmd.split(' ')[0];
+  
+  if (fileCommands.includes(firstWord)) {
+    const query = cmd.substring(firstWord.length).trim();
+    if (query) {
+      handleFileCommand(firstWord, query);
+      return true; // Handled locally
+    }
+  }
+
   const greetings = ['hi', 'hello', 'hey', 'hello there', 'good morning', 'good afternoon', 'good evening'];
   if (greetings.includes(cmd)) {
     return "Hello! I'm Desk Assistant AI. I'm here to help you manage files on your computer.";
@@ -518,9 +530,11 @@ async function askAssistant() {
   // Check for local replies first
   const localReply = handleLocalCommand(input);
   if (localReply) {
-    setTimeout(() => {
-      addMessage(localReply, 'ai');
-    }, 300);
+    if (typeof localReply === 'string') {
+      setTimeout(() => {
+        addMessage(localReply, 'ai');
+      }, 300);
+    }
     return;
   }
 
@@ -987,7 +1001,9 @@ async function handleQuickAction(action, query = '') {
       }
       
       if (action.includes('downloads') || action.includes('desktop') || action.includes('both')) {
-        flow.style.display = 'flex';
+        showUndoUI(false);
+        const undoBtn = document.getElementById('undoBtn');
+        if (undoBtn) undoBtn.style.display = 'none'; // Hide undo until applied
       }
     } else {
       const emptyMessages = {
@@ -1008,6 +1024,36 @@ async function handleQuickAction(action, query = '') {
   }
 }
 
+async function handleFileCommand(command, query) {
+  addMessage(`Searching for files matching "${query}"...`, 'ai', true);
+  
+  try {
+    const res = await window.deskAI.quickAction('search', query);
+    removeThinking();
+    
+    if (res.preview && res.preview.length > 0) {
+      const displayMsg = `I found ${res.preview.length} files matching "${query}":`;
+      const aiMsg = addMessage(displayMsg, 'ai');
+      
+      const grid = document.createElement('div');
+      grid.className = 'chat-result-grid';
+      
+      res.preview.forEach(file => {
+        const card = createFileCard(file, 'search');
+        grid.appendChild(card);
+      });
+      
+      aiMsg.appendChild(grid);
+    } else {
+      addMessage("No files found matching your search.", 'ai');
+    }
+  } catch (err) {
+    removeThinking();
+    console.error("File Command Error:", err);
+    addMessage("I encountered an error while searching for files.", 'ai');
+  }
+}
+
 function createFileCard(file, type) {
   const card = document.createElement('div');
   card.className = 'file-result-card';
@@ -1018,45 +1064,141 @@ function createFileCard(file, type) {
   const fileDate = file.date ? new Date(file.date).toLocaleDateString() : 'Unknown date';
 
   card.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 20px;">📄</span>
-      <div style="overflow: hidden;">
-        <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${fileName}">${fileName}</div>
-        <div style="font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${filePath}">${filePath}</div>
-      </div>
+    <div class="file-info">
+      <div class="file-name" title="${fileName}">📄 ${fileName}</div>
+      <div class="file-path" title="${filePath}">${filePath}</div>
     </div>
-    <div style="display: flex; gap: 12px; font-size: 11px; color: var(--muted2);">
+    <div class="file-meta">
       <span>💾 ${fileSize}</span>
       <span>📅 ${fileDate}</span>
     </div>
-    <div style="display: flex; gap: 8px; margin-top: 4px;">
-      <button class="action-btn mini" onclick="openFile('${filePath.replace(/\\/g, '\\\\')}')">Open</button>
-      <button class="card-btn mini" onclick="openLocation('${filePath.replace(/\\/g, '\\\\')}')">Location</button>
-      ${type === 'duplicates' ? `<button class="reject-btn mini" onclick="deleteFile('${filePath.replace(/\\/g, '\\\\')}')">Delete</button>` : ''}
+    <div class="file-actions">
+      <button class="action-btn mini open-btn">Open</button>
+      <button class="card-btn mini loc-btn">Location</button>
+      <button class="card-btn mini rename-btn">Rename</button>
+      <button class="card-btn mini danger delete-btn">Delete</button>
+      <button class="card-btn mini move-btn">Move</button>
     </div>
   `;
+
+  // Use event listeners instead of onclick for better security and path handling
+  card.querySelector('.open-btn').addEventListener('click', () => openFile(filePath));
+  card.querySelector('.loc-btn').addEventListener('click', () => openLocation(filePath));
+  card.querySelector('.rename-btn').addEventListener('click', () => renameFile(filePath));
+  card.querySelector('.delete-btn').addEventListener('click', () => deleteFile(filePath));
+  card.querySelector('.move-btn').addEventListener('click', () => moveFile(filePath));
+
   return card;
 }
 
 function openFile(path) { window.deskAI.openFile(path); }
 function openLocation(path) { window.deskAI.openLocation(path); }
-function deleteFile(path) {
+
+function showUndoUI(onlyUndo = true) {
+  const flow = document.getElementById('smartActionFlow');
+  const undoBtn = document.getElementById('undoBtn');
+  const approveBtn = flow?.querySelector('.approve-btn');
+  const rejectBtn = flow?.querySelector('.reject-btn');
+  
+  if (flow && undoBtn) {
+    flow.style.display = 'flex';
+    undoBtn.style.display = 'inline-block';
+    
+    if (onlyUndo) {
+      if (approveBtn) approveBtn.style.display = 'none';
+      if (rejectBtn) rejectBtn.style.display = 'none';
+    } else {
+      if (approveBtn) approveBtn.style.display = 'inline-block';
+      if (rejectBtn) rejectBtn.style.display = 'inline-block';
+    }
+  }
+}
+
+async function deleteFile(path) {
   if (confirm("Move this file to Recycle Bin?")) {
-    window.deskAI.deleteFile(path);
-    addNotification("File moved to Recycle Bin");
-    refreshSuggestions();
+    const res = await window.deskAI.deleteFile(path);
+    if (res && res.success) {
+      addNotification("File moved to Recycle Bin");
+      addMessage(`File deleted: ${path.split(/[\\\/]/).pop()}`, 'ai');
+      refreshSuggestions();
+      
+      // Show Undo UI with explanation for delete
+      showUndoUI(true);
+      const undoBtn = document.getElementById('undoBtn');
+      if (undoBtn) {
+        undoBtn.onclick = () => {
+          alert("For safety, please restore the file manually from the Recycle Bin.");
+          document.getElementById('smartActionFlow').style.display = 'none';
+        };
+      }
+    } else if (res && res.error) {
+      addMessage(`Failed to delete: ${res.error}`, 'ai');
+    }
+  }
+}
+
+async function renameFile(filePath) {
+  const oldName = filePath.split(/[\\\/]/).pop();
+  const newName = prompt("Enter new name for the file:", oldName);
+  if (newName && newName !== oldName) {
+    try {
+      const res = await window.deskAI.renameFile(filePath, newName);
+      if (res && res.success) {
+        addNotification(`Renamed to ${newName}`);
+        addMessage(`Successfully renamed file to "${newName}"`, 'ai');
+        refreshSuggestions();
+        
+        // Show Undo UI
+        showUndoUI(true);
+        const undoBtn = document.getElementById('undoBtn');
+        if (undoBtn) undoBtn.onclick = undoLast;
+      } else if (res && res.error) {
+        alert(`Rename failed: ${res.error}`);
+      }
+    } catch (err) {
+      console.error("Rename Error:", err);
+      alert("An error occurred during rename.");
+    }
+  }
+}
+
+async function moveFile(filePath) {
+  const targetDir = prompt("Enter target directory path (e.g. C:\\Users\\Name\\Documents):");
+  if (targetDir) {
+    try {
+      const res = await window.deskAI.moveFile(filePath, targetDir);
+      if (res && res.success) {
+        addNotification(`Moved to ${targetDir}`);
+        addMessage(`Successfully moved file to ${targetDir}`, 'ai');
+        refreshSuggestions();
+
+        // Show Undo UI
+        showUndoUI(true);
+        const undoBtn = document.getElementById('undoBtn');
+        if (undoBtn) undoBtn.onclick = undoLast;
+      } else if (res && res.error) {
+        alert(`Move failed: ${res.error}`);
+      }
+    } catch (err) {
+      console.error("Move Error:", err);
+      alert("An error occurred during move.");
+    }
   }
 }
 
 async function approveAction() {
   const flow = document.getElementById('smartActionFlow');
-  flow.style.display = 'none';
+  if (flow) flow.style.display = 'none';
   addMessage("Applying changes...", 'ai', true);
   try {
     const res = await window.deskAI.applyRename(currentPreview);
     removeThinking();
     addMessage(`Success! Processed ${res.doneCount} files.`, 'ai');
-    document.getElementById('undoBtn').style.display = 'inline-block';
+    
+    showUndoUI(true);
+    const undoBtn = document.getElementById('undoBtn');
+    if (undoBtn) undoBtn.onclick = undoLast;
+    
     addNotification(`Renamed ${res.doneCount} files.`);
     refreshSuggestions();
   } catch (err) {
@@ -1066,7 +1208,8 @@ async function approveAction() {
 }
 
 function cancelAction() {
-  document.getElementById('smartActionFlow').classList.add('hide');
+  const flow = document.getElementById('smartActionFlow');
+  if (flow) flow.style.display = 'none';
   currentPreview = [];
   addMessage("Action cancelled.", 'ai');
 }

@@ -40,9 +40,24 @@ function undoRenameActions(doneActions) {
   // Undo in reverse order
   const reversed = [...doneActions].reverse();
   for (const a of reversed) {
+    if (a.type === "delete") {
+      // Deletion is permanent in terms of undo via this tool (Recycle Bin logic).
+      // We inform the user they need to restore it from the bin.
+      continue;
+    }
+
     if (a.type !== "rename") continue;
     if (safeExists(a.to)) {
-      fs.renameSync(a.to, a.from);
+      try {
+        fs.renameSync(a.to, a.from);
+      } catch (e) {
+        if (e.code === 'EXDEV') {
+          fs.copyFileSync(a.to, a.from);
+          fs.unlinkSync(a.to);
+        } else {
+          console.error(`Undo failed for ${a.to}:`, e);
+        }
+      }
     }
   }
 }

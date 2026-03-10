@@ -4,17 +4,17 @@ const os = require("os");
 
 function scanFolders(scanFull = false) {
   const home = os.homedir();
-  let foldersToScan = {
-    Downloads: path.join(home, "Downloads"),
-    Desktop: path.join(home, "Desktop"),
-    Documents: path.join(home, "Documents"),
-    Pictures: path.join(home, "Pictures"),
-    Videos: path.join(home, "Videos")
-  };
+  let foldersToScan = [
+    path.join(home, "Downloads"),
+    path.join(home, "Desktop"),
+    path.join(home, "Documents"),
+    path.join(home, "Pictures"),
+    path.join(home, "Videos")
+  ];
 
   if (scanFull) {
     // Detect all drives (Windows)
-    const drives = ['C:\\', 'D:\\', 'E:\\', 'F:\\', 'G:\\'];
+    const drives = ['C:\\', 'D:\\', 'E:\\', 'F:\\', 'G:\\', 'H:\\', 'I:\\', 'J:\\'];
     drives.forEach(drive => {
       if (fs.existsSync(drive)) {
         try {
@@ -28,10 +28,10 @@ function scanFolders(scanFull = false) {
                 const systemFolders = [
                   'windows', 'program files', 'program files (x86)', 
                   'appdata', 'system32', 'recycler', '$recycle.bin', 
-                  'system volume information', 'boot'
+                  'system volume information', 'boot', 'node_modules', '.git'
                 ];
                 if (!systemFolders.includes(lowerItem) && !item.startsWith('.')) {
-                  foldersToScan[`${drive}_${item}`] = fullPath;
+                  foldersToScan.push(fullPath);
                 }
               }
             } catch (e) {}
@@ -48,24 +48,38 @@ function scanFolders(scanFull = false) {
     others: [],
     all: [],
     downloads: [],
-    desktop: []
+    desktop: [],
+    documents: []
   };
 
   const downloadsPath = path.join(home, "Downloads").toLowerCase();
   const desktopPath = path.join(home, "Desktop").toLowerCase();
+  const documentsPath = path.join(home, "Documents").toLowerCase();
 
-  Object.values(foldersToScan).forEach(folder => {
-    if (!fs.existsSync(folder)) return;
+  const systemFolders = [
+    'windows', 'program files', 'program files (x86)', 
+    'appdata', 'system32', 'recycler', '$recycle.bin', 
+    'system volume information', 'boot', 'node_modules', '.git'
+  ];
+
+  function walkSync(dir, depth = 0) {
+    if (depth > (scanFull ? 5 : 2)) return; // Limit depth to avoid performance issues
+    if (!fs.existsSync(dir)) return;
 
     try {
-      const files = fs.readdirSync(folder);
-
+      const files = fs.readdirSync(dir);
       files.forEach(file => {
         try {
-          const fullPath = path.join(folder, file);
+          const fullPath = path.join(dir, file);
           const stats = fs.lstatSync(fullPath);
           
-          if (stats.isDirectory()) return;
+          if (stats.isDirectory()) {
+            const lowerDir = file.toLowerCase();
+            if (!systemFolders.includes(lowerDir) && !file.startsWith('.')) {
+              walkSync(fullPath, depth + 1);
+            }
+            return;
+          }
 
           const ext = path.extname(file).toLowerCase();
           const fileObj = {
@@ -78,21 +92,21 @@ function scanFolders(scanFull = false) {
 
           result.all.push(fileObj);
           
-          if (fullPath.toLowerCase().startsWith(downloadsPath)) result.downloads.push(fileObj);
-          if (fullPath.toLowerCase().startsWith(desktopPath)) result.desktop.push(fileObj);
+          const lowerPath = fullPath.toLowerCase();
+          if (lowerPath.startsWith(downloadsPath)) result.downloads.push(fileObj);
+          if (lowerPath.startsWith(desktopPath)) result.desktop.push(fileObj);
+          if (lowerPath.startsWith(documentsPath)) result.documents.push(fileObj);
 
           if (ext === ".pdf") result.pdf.push(fullPath);
-          else if ([".jpg", ".png", ".jpeg"].includes(ext)) result.images.push(fullPath);
+          else if ([".jpg", ".png", ".jpeg", ".gif"].includes(ext)) result.images.push(fullPath);
           else if ([".exe", ".msi"].includes(ext)) result.installers.push(fullPath);
           else result.others.push(fullPath);
-        } catch (e) {
-          // Skip files that can't be read (permissions etc)
-        }
+        } catch (e) {}
       });
-    } catch (e) {
-      // Skip folders that can't be read
-    }
-  });
+    } catch (e) {}
+  }
+
+  foldersToScan.forEach(folder => walkSync(folder));
 
   return result;
 }

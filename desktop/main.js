@@ -515,9 +515,98 @@ ipcMain.handle("file:delete", async (event, filePath) => {
         INSERT INTO activity_log (type, old_name, new_name, file_path)
         VALUES (?, ?, ?, ?)
       `, ["Delete", path.basename(filePath), "Recycle Bin", filePath]);
+
+      // Add to undo store
+      // Note: Truly undoing a trash operation via Electron/Node is complex.
+      // We can't easily programmatically restore from trash, but we can log it.
+      // For now, we'll mark it in undo store so UI can show the button.
+      setLastRenameActions([{
+        type: "delete",
+        from: filePath,
+        to: "Recycle Bin"
+      }]);
+
+      return { success: true };
     }
   } catch (err) {
     console.error("File Delete Error:", err);
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("file:rename", async (event, { filePath, newName }) => {
+  try {
+    if (!filePath || !newName) return { error: "Invalid parameters" };
+    const oldDir = path.dirname(filePath);
+    const newPath = path.join(oldDir, newName);
+    
+    if (fs.existsSync(newPath)) {
+      return { error: "A file with that name already exists" };
+    }
+    
+    fs.renameSync(filePath, newPath);
+    
+    // Log rename
+    await runQuery(`
+      INSERT INTO activity_log (type, old_name, new_name, file_path)
+      VALUES (?, ?, ?, ?)
+    `, ["Rename", path.basename(filePath), newName, filePath]);
+
+    // Add to undo store
+    setLastRenameActions([{
+      type: "rename",
+      from: filePath,
+      to: newPath
+    }]);
+    
+    return { success: true, newPath };
+  } catch (err) {
+    console.error("File Rename Error:", err);
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("file:move", async (event, { filePath, targetDir }) => {
+  try {
+    if (!filePath || !targetDir) return { error: "Invalid parameters" };
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    
+    const newPath = path.join(targetDir, path.basename(filePath));
+    if (fs.existsSync(newPath)) {
+      return { error: "A file with that name already exists in target directory" };
+    }
+    
+    // Cross-drive move support: copy and then delete
+    try {
+      fs.renameSync(filePath, newPath);
+    } catch (e) {
+      if (e.code === 'EXDEV') {
+        fs.copyFileSync(filePath, newPath);
+        fs.unlinkSync(filePath);
+      } else {
+        throw e;
+      }
+    }
+    
+    // Log move
+    await runQuery(`
+      INSERT INTO activity_log (type, old_name, new_name, file_path)
+      VALUES (?, ?, ?, ?)
+    `, ["Move", path.basename(filePath), path.basename(targetDir), filePath]);
+
+    // Add to undo store
+    setLastRenameActions([{
+      type: "rename", // We reuse rename logic for undo (it's just moving from to)
+      from: filePath,
+      to: newPath
+    }]);
+    
+    return { success: true, newPath };
+  } catch (err) {
+    console.error("File Move Error:", err);
+    return { error: err.message };
   }
 });
 
@@ -745,16 +834,12 @@ ipcMain.handle("action:quick", async (event, action, query = '') => {
     }
 
     else if (action === "search") {
-      const searchTerm = query.toLowerCase().replace(/^find\s+/, '').trim();
-      const supportedExts = ['.pdf', '.doc', '.docx', '.txt', '.pptx', '.xlsx', '.jpg', '.png'];
+      const searchTerm = query.toLowerCase().replace(/^(find|search|delete|rename|open|move)\s+/, '').trim();
       
       let results = allFiles.filter(f => {
         if (!f || !f.name) return false;
         const name = f.name.toLowerCase();
-        const ext = path.extname(f.name).toLowerCase();
-        const matchesName = name.includes(searchTerm);
-        const isSupported = supportedExts.includes(ext);
-        return matchesName && isSupported;
+        return name.includes(searchTerm);
       });
 
       // If no exact matches, look for similar matches (fuzzy-ish)
@@ -762,12 +847,8 @@ ipcMain.handle("action:quick", async (event, action, query = '') => {
         results = allFiles.filter(f => {
           if (!f || !f.name) return false;
           const name = f.name.toLowerCase();
-          const ext = path.extname(f.name).toLowerCase();
-          const isSupported = supportedExts.includes(ext);
-          // Split searchTerm into words and check if any word matches
           const words = searchTerm.split(/\s+/);
-          const matchesAnyWord = words.some(word => word.length > 2 && name.includes(word));
-          return matchesAnyWord && isSupported;
+          return words.some(word => word.length > 2 && name.includes(word));
         });
       }
 
