@@ -32,10 +32,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            desktop/dist/*.exe
-            desktop/dist/*.blockmap
-            desktop/dist/latest.yml
-            fail_on_unmatched_files: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          artifacts: "desktop/dist/*.exe,desktop/dist/*.blockmap,desktop/dist/latest.yml"
+          allowUpdates: true
+          replacesArtifacts: true
+          artifactErrorsFailBuild: true
+          token: ${{ secrets.GITHUB_TOKEN }}
