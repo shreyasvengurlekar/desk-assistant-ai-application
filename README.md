@@ -37,4 +37,4 @@ npm start
 
 ## 👨‍💻 Author
 
-Shreyas Swapnil Vengurlekar
+Shreyas Vengurlekar
