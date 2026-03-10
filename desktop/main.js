@@ -451,8 +451,8 @@ ipcMain.handle("db:get-activity-log", async (event, filter = "all") => {
     let query = "SELECT * FROM activity_log ";
     let params = [];
     if (filter !== "all") {
-      query += "WHERE type = ? ";
-      params.push(filter);
+      query += "WHERE LOWER(type) = ? ";
+      params.push(filter.toLowerCase());
     }
     query += "ORDER BY date DESC LIMIT 100";
     
@@ -816,6 +816,17 @@ ipcMain.handle("rename:undo", async () => {
     }
 
     undoRenameActions(last);
+    
+    // Log to DB
+    for (const a of last) {
+      if (a && a.from && a.to) {
+        await runQuery(`
+          INSERT INTO activity_log (type, old_name, new_name, file_path)
+          VALUES (?, ?, ?, ?)
+        `, ["Undo", path.basename(a.to), path.basename(a.from), a.from]);
+      }
+    }
+
     clearLastRenameActions();
     return { message: "Undo complete." };
   } catch (err) {

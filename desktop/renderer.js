@@ -230,7 +230,7 @@ async function loadActivityLog() {
       `;
 
       const date = new Date(log.date).toLocaleString();
-      const icon = log.type === 'Rename' ? '📝' : log.type === 'Delete' ? '🗑️' : log.type === 'Merge' ? '🔗' : '📅';
+      const icon = log.type === 'Rename' ? '📝' : log.type === 'Delete' ? '🗑️' : log.type === 'Merge' ? '🔗' : log.type === 'Undo' ? '⏪' : '📅';
       
       entry.innerHTML = `
         <div style="font-size: 20px; background: var(--bg); padding: 8px; border-radius: 10px;">${icon}</div>
@@ -578,10 +578,10 @@ function addSuggestionCard(fileData) {
       </div>
       ${suggestionHTML}
       <div class="card-actions" style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-        <button class="card-btn mini primary" onclick="openFile('${fileData.path.replace(/\\/g, '\\\\')}')">Open</button>
+        <button class="action-btn mini" onclick="openFile('${fileData.path.replace(/\\/g, '\\\\')}')">Open</button>
         <button class="card-btn mini" onclick="openLocation('${fileData.path.replace(/\\/g, '\\\\')}')">Location</button>
-        ${analysis?.suggestion === 'Rename' ? `<button class="card-btn mini success" onclick="sendPrompt('Rename ${fileData.name}')">Rename</button>` : ''}
-        <button class="card-btn mini secondary" onclick="this.closest('.suggestion-item').remove(); checkSuggestionsEmptyState();">Ignore</button>
+        ${analysis?.suggestion === 'Rename' ? `<button class="approve-btn mini" onclick="sendPrompt('Rename ${fileData.name}')">Rename</button>` : ''}
+        <button class="reject-btn mini" onclick="this.closest('.suggestion-item').remove(); checkSuggestionsEmptyState();">Ignore</button>
       </div>
     </div>
   `;
@@ -840,7 +840,7 @@ async function handleQuickAction(action, query = '') {
                 <div style="font-size: 11px; color: var(--muted);">${s.count} files (e.g., ${s.files.join(', ')})</div>
               </div>
             </div>
-            <button class="card-btn mini success" style="margin-top: 8px;">Move All</button>
+            <button class="approve-btn mini" style="margin-top: 8px;">Move All</button>
           `;
           folderGrid.appendChild(card);
         });
@@ -891,9 +891,9 @@ function createFileCard(file, type) {
       <span>📅 ${fileDate}</span>
     </div>
     <div style="display: flex; gap: 8px; margin-top: 4px;">
-      <button class="card-btn mini primary" onclick="openFile('${filePath.replace(/\\/g, '\\\\')}')">Open</button>
+      <button class="action-btn mini" onclick="openFile('${filePath.replace(/\\/g, '\\\\')}')">Open</button>
       <button class="card-btn mini" onclick="openLocation('${filePath.replace(/\\/g, '\\\\')}')">Location</button>
-      ${type === 'duplicates' ? `<button class="card-btn mini danger" onclick="deleteFile('${filePath.replace(/\\/g, '\\\\')}')">Delete</button>` : ''}
+      ${type === 'duplicates' ? `<button class="reject-btn mini" onclick="deleteFile('${filePath.replace(/\\/g, '\\\\')}')">Delete</button>` : ''}
     </div>
   `;
   return card;
