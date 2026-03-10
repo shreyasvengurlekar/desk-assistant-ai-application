@@ -153,6 +153,7 @@ function showPage(pageId) {
   });
 
   if (pageId === 'activity') loadActivityLog();
+  if (pageId === 'suggestions') loadAIInsights();
 }
 
 // Header toggle logic
@@ -257,6 +258,130 @@ async function deleteActivityEntry(id) {
   if (confirm("Delete this entry?")) {
     await window.deskAI.deleteActivity(id);
     loadActivityLog();
+  }
+}
+
+async function loadAIInsights() {
+  const list = document.getElementById('suggestionsList');
+  if (!list) return;
+
+  list.innerHTML = '<div class="thinking-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+
+  try {
+    const stats = await window.deskAI.getSystemStats();
+    list.innerHTML = '';
+
+    const suggestions = [];
+
+    // 1. Add detected issues if they exist
+    if (stats.messy > 0) {
+      suggestions.push({
+        icon: '📁',
+        title: `${stats.messy} messy files`,
+        desc: 'Filenames that could be better organized.',
+        action: 'Review',
+        fn: 'reviewMessyNames()'
+      });
+    }
+    if (stats.duplicates > 0) {
+      suggestions.push({
+        icon: '👯',
+        title: `${stats.duplicates} duplicates`,
+        desc: 'Multiple copies of the same files found.',
+        action: 'Review',
+        fn: 'findDuplicates()'
+      });
+    }
+    if (stats.large > 0) {
+      suggestions.push({
+        icon: '💾',
+        title: `${stats.large} large files`,
+        desc: 'Files taking up more than 500MB of space.',
+        action: 'Review',
+        fn: 'showLargeFiles()'
+      });
+    }
+    if (stats.resumes > 0) {
+      suggestions.push({
+        icon: '📄',
+        title: `${stats.resumes} resumes found`,
+        desc: 'Quickly find your professional documents.',
+        action: 'Review',
+        fn: 'findMyResume()'
+      });
+    }
+
+    // 2. Add default fallback suggestions (always shown)
+    const defaults = [
+      { icon: '📥', title: 'Organize Downloads', desc: 'Sort your downloads folder into categories.', action: 'Scan', fn: "handleQuickAction('downloads')" },
+      { icon: '👯', title: 'Find Duplicate Files', desc: 'Locate and remove duplicate files to save space.', action: 'Scan', fn: "handleQuickAction('duplicates')" },
+      { icon: '💾', title: 'Find Large Files', desc: 'Identify large files that are cluttering your disk.', action: 'Scan', fn: "handleQuickAction('largeFiles')" },
+      { icon: '📄', title: 'Find Resume Files', desc: 'Search for CVs and resume documents automatically.', action: 'Scan', fn: "handleQuickAction('resume')" },
+      { icon: '🕒', title: 'Show Recent Files', desc: 'See a list of files you recently modified.', action: 'View', fn: "handleQuickAction('recent')" }
+    ];
+
+    // Filter out defaults that are already shown as detected issues
+    const finalSuggestions = [...suggestions];
+    defaults.forEach(d => {
+      const exists = suggestions.some(s => s.title.toLowerCase().includes(d.title.toLowerCase()) || d.title.toLowerCase().includes(s.title.toLowerCase()));
+      if (!exists) finalSuggestions.push(d);
+    });
+
+    if (finalSuggestions.length === 0) {
+      list.innerHTML = '<div class="empty-state"><span class="empty-icon">💡</span><p>No new AI suggestions at the moment.</p></div>';
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'suggestions-page-grid';
+    grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 10px;';
+
+    finalSuggestions.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'suggestion-card';
+      card.style.cssText = `
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+      `;
+      card.onclick = () => {
+        if (s.fn.includes('handleQuickAction')) {
+          const action = s.fn.match(/'([^']+)'/)[1];
+          handleQuickAction(action);
+        } else {
+          // Call named global functions
+          const fnName = s.fn.replace('()', '');
+          if (typeof window[fnName] === 'function') {
+            window[fnName]();
+          }
+        }
+      };
+      card.onmouseover = () => { card.style.borderColor = 'var(--accent)'; card.style.transform = 'translateY(-2px)'; };
+      card.onmouseout = () => { card.style.borderColor = 'var(--border)'; card.style.transform = 'translateY(0)'; };
+
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 24px; background: var(--bg); padding: 10px; border-radius: 12px;">${s.icon}</div>
+          <div style="font-weight: 600; font-size: 16px;">${s.title}</div>
+        </div>
+        <div style="font-size: 13px; color: var(--muted); line-height: 1.4;">${s.desc}</div>
+        <button class="card-btn" style="margin-top: 8px; align-self: flex-start;">${s.action}</button>
+      `;
+      grid.appendChild(card);
+    });
+
+    list.appendChild(grid);
+
+  } catch (err) {
+    console.error("AI Insights failed", err);
+    list.innerHTML = '<div class="empty-state">Failed to load suggestions.</div>';
   }
 }
 
@@ -601,21 +726,39 @@ function addSuggestionCard(fileData) {
 }
 function updateStat(id, val, label) {
   const el = document.getElementById(id);
-  if (el) {
-    el.innerText = val || 0;
-    const item = el.closest('.suggestion-item');
-    if (!item) return;
-    
-    if (val === 0) {
-      item.style.display = 'none'; // Hide if 0 to keep dashboard clean
-    } else {
-      item.style.display = 'flex';
+  if (!el) return;
+  
+  const item = el.closest('.suggestion-item');
+  if (!item) return;
+
+  const defaultLabels = {
+    'messyFilesCount': ' Organize Downloads',
+    'duplicatesCount': ' Find Duplicate Files',
+    'largeFilesCount': ' Find Large Files',
+    'resumesCount': ' Find Resume Files'
+  };
+
+  const info = el.parentElement;
+  if (info) {
+    const textNode = Array.from(info.childNodes).find(n => n.nodeType === 3); // Find the text node
+    const btn = info.querySelector('.review-btn');
+
+    if (val > 0) {
+      el.innerText = val;
+      if (textNode) textNode.textContent = ` ${label}`;
+      if (btn) btn.innerText = 'Review';
+      item.classList.add('has-issues');
       item.style.opacity = '1';
-      item.title = `${val} ${label} detected`;
+    } else {
+      el.innerText = '';
+      if (textNode) textNode.textContent = defaultLabels[id] || label;
+      if (btn) btn.innerText = 'Scan';
+      item.classList.remove('has-issues');
+      item.style.opacity = '0.9';
     }
   }
   
-  // Check if all suggestions are 0 to show empty state
+  item.style.display = 'flex'; // Always show
   checkSuggestionsEmptyState();
 }
 
@@ -629,20 +772,10 @@ function checkSuggestionsEmptyState() {
   });
 
   updateStatus('suggestionsStatus', `${visibleCount} Suggestions`, visibleCount > 0 ? 'on' : 'off');
-
-  let emptyMsg = document.getElementById('suggestionsEmptyMsg');
-  if (visibleCount === 0) {
-    if (!emptyMsg) {
-      emptyMsg = document.createElement('div');
-      emptyMsg.id = 'suggestionsEmptyMsg';
-      emptyMsg.className = 'empty-state';
-      emptyMsg.innerHTML = '<span class="empty-icon">✨</span><p>All filenames look organized. No duplicates or large files found.</p>';
-      grid.appendChild(emptyMsg);
-    }
-    emptyMsg.style.display = 'block';
-  } else if (emptyMsg) {
-    emptyMsg.style.display = 'none';
-  }
+  
+  // No longer showing a dedicated empty message since we have default suggestions
+  const emptyMsg = document.getElementById('suggestionsEmptyMsg');
+  if (emptyMsg) emptyMsg.remove();
 }
 
 // Preferences Custom Input
@@ -697,6 +830,9 @@ function stopSpeechRecognition() {}
 
 // Existing Quick Action Flow (preserved)
 async function handleQuickAction(action, query = '') {
+  // Ensure we switch to dashboard to see results
+  showPage('dashboard');
+
   const flow = document.getElementById('smartActionFlow');
   flow.style.display = 'none';
 
@@ -713,6 +849,9 @@ async function handleQuickAction(action, query = '') {
   };
 
   addMessage(actionNames[action] || action, 'user');
+
+  // Add a subtle notification so the user knows the button click was registered
+  addNotification(`Starting action: ${actionNames[action] || action}`);
 
   // Auto-collapse suggestions to free space
   const grid = document.getElementById('suggestionsGrid');
@@ -1205,10 +1344,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 
   const userInput = document.getElementById('userInput');
-  userInput.addEventListener('focus', () => {
+  const chatContainer = document.querySelector('.chat-container');
+  if (chatContainer) {
+    chatContainer.addEventListener('click', () => userInput.focus());
+  }
+
+  userInput.addEventListener('focus', function() {
     if (document.querySelector('.nav a.active').dataset.page !== 'dashboard') {
       showPage('dashboard');
     }
+    // Ensure it's not collapsed or hidden
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
   });
 
   userInput.addEventListener('keydown', (e) => {
