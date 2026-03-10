@@ -4,6 +4,7 @@ let isListening = false;
 let tourStep = 0;
 let ollamaStep = 0;
 let isOllamaReady = false;
+let hasUnread = false;
 
 const tourSteps = [
   {
@@ -479,7 +480,7 @@ function toggleNotifications() {
 
 function addNotification(text) {
   const list = document.getElementById('notifList');
-  const badge = document.getElementById('notifBadge');
+  if (!list) return;
   
   if (list.querySelector('.empty-state')) list.innerHTML = '';
   
@@ -488,7 +489,8 @@ function addNotification(text) {
   item.innerText = text;
   list.prepend(item);
   
-  if (badge) badge.style.display = 'block';
+  hasUnread = true;
+  updateNotifBadge();
 }
 
 function clearNotifications() {
@@ -501,8 +503,11 @@ function clearNotifications() {
 
 function updateNotifBadge() {
   const badge = document.getElementById('notifBadge');
-  if (!badge) return;
-  badge.style.display = hasUnread ? 'block' : 'none';
+  const list = document.getElementById('notifList');
+  if (!badge || !list) return;
+  
+  const hasItems = list.querySelectorAll('.notif-item').length > 0;
+  badge.style.display = (hasUnread && hasItems) ? 'block' : 'none';
 }
 
 // Smart Suggestions UI
@@ -524,11 +529,6 @@ async function refreshSuggestions() {
     updateStat('duplicatesCount', stats.duplicates, "duplicates found");
     updateStat('largeFilesCount', stats.large, "large files (>500MB)");
     updateStat('resumesCount', stats.resumes, "resume files found");
-
-    if (stats.messy > 0 || stats.duplicates > 0 || stats.large > 0) {
-      hasUnread = true;
-      updateNotifBadge();
-    }
 
     // Auto-collapse if session already has it collapsed
     if (sessionStorage.getItem('suggestionsCollapsed') === 'true') {
