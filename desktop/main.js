@@ -632,6 +632,30 @@ ipcMain.handle("file:rename", async (event, { filePath, newName }) => {
   }
 });
 
+ipcMain.handle("dialog:select-directory", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  });
+  if (result.canceled) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle("file:get-suggestion", async (event, filePath) => {
+  const home = require("os").homedir();
+  const ext = path.extname(filePath).toLowerCase();
+  
+  if (['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg'].includes(ext)) {
+    return path.join(home, "Pictures");
+  } else if (['.mp4', '.mkv', '.mov', '.avi', '.wmv'].includes(ext)) {
+    return path.join(home, "Videos");
+  } else if (['.mp3', '.wav', '.flac', '.m4a', '.aac'].includes(ext)) {
+    return path.join(home, "Music");
+  } else if (['.pdf', '.doc', '.docx', '.txt', '.rtf', '.odt'].includes(ext)) {
+    return path.join(home, "Documents");
+  }
+  return null;
+});
+
 ipcMain.handle("file:move", async (event, { filePath, targetDir }) => {
   try {
     if (!filePath || !targetDir) return { error: "Invalid parameters" };

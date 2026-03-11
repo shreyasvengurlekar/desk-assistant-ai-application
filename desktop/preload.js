@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld("deskAI", {
   restoreFile: (filePath) => ipcRenderer.invoke("file:restore", filePath),
   renameFile: (filePath, newName) => ipcRenderer.invoke("file:rename", { filePath, newName }),
   moveFile: (filePath, targetDir) => ipcRenderer.invoke("file:move", { filePath, targetDir }),
+  getSuggestion: (filePath) => ipcRenderer.invoke("file:get-suggestion", filePath),
+  selectDirectory: () => ipcRenderer.invoke("dialog:select-directory"),
   mergePdfs: (filePaths) => ipcRenderer.invoke("file:merge-pdfs", filePaths),
   
   // Activity Log

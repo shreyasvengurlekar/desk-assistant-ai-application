@@ -1147,7 +1147,7 @@ function createFileCard(file, type) {
   });
 
   card.querySelector('.delete-btn').addEventListener('click', () => deleteFile(filePath));
-  card.querySelector('.move-btn').addEventListener('click', () => moveFile(filePath));
+  card.querySelector('.move-btn').addEventListener('click', () => moveFile(filePath, card));
 
   return card;
 }
@@ -1207,7 +1207,7 @@ async function handleInlineRename(oldPath, newName, card) {
       card.querySelector('.open-btn').addEventListener('click', () => openFile(finalPath));
       card.querySelector('.loc-btn').addEventListener('click', () => openLocation(finalPath));
       card.querySelector('.delete-btn').addEventListener('click', () => deleteFile(finalPath));
-      card.querySelector('.move-btn').addEventListener('click', () => moveFile(finalPath));
+      card.querySelector('.move-btn').addEventListener('click', () => moveFile(finalPath, card));
       
       // Also update the rename listener
       const renameBtn = card.querySelector('.rename-btn');
@@ -1251,6 +1251,8 @@ async function handleInlineRename(oldPath, newName, card) {
 function openFile(path) { window.deskAI.openFile(path); }
 function openLocation(path) { window.deskAI.openLocation(path); }
 
+let undoTimerInterval = null;
+
 function showUndoUI(onlyUndo = true) {
   const flow = document.getElementById('smartActionFlow');
   const undoBtn = document.getElementById('undoBtn');
@@ -1264,9 +1266,36 @@ function showUndoUI(onlyUndo = true) {
     if (onlyUndo) {
       if (approveBtn) approveBtn.style.display = 'none';
       if (rejectBtn) rejectBtn.style.display = 'none';
+
+      // Clear any existing timer
+      if (undoTimerInterval) {
+        clearInterval(undoTimerInterval);
+        undoTimerInterval = null;
+      }
+
+      let timeLeft = 5;
+      undoBtn.innerText = `Undo (${timeLeft}s)`;
+      
+      undoTimerInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          clearInterval(undoTimerInterval);
+          undoTimerInterval = null;
+          flow.style.display = 'none';
+          undoBtn.innerText = 'Undo';
+        } else {
+          undoBtn.innerText = `Undo (${timeLeft}s)`;
+        }
+      }, 1000);
     } else {
       if (approveBtn) approveBtn.style.display = 'inline-block';
       if (rejectBtn) rejectBtn.style.display = 'inline-block';
+      
+      if (undoTimerInterval) {
+        clearInterval(undoTimerInterval);
+        undoTimerInterval = null;
+      }
+      undoBtn.innerText = 'Undo';
     }
   }
 }
@@ -1300,6 +1329,7 @@ async function deleteFile(path) {
       }
 
       refreshSuggestions();
+      loadActivityLog();
       
       // Show Global Undo UI
       showUndoUI(true);
@@ -1311,6 +1341,10 @@ async function deleteFile(path) {
             addNotification("File restored");
             addMessage(`File restored: ${path.split(/[\\\/]/).pop()}`, 'ai');
             document.getElementById('smartActionFlow').style.display = 'none';
+            if (undoTimerInterval) {
+              clearInterval(undoTimerInterval);
+              undoTimerInterval = null;
+            }
             refreshSuggestions();
             loadActivityLog();
           } else {
@@ -1325,27 +1359,71 @@ async function deleteFile(path) {
 }
 
 
-async function moveFile(filePath) {
-  const targetDir = prompt("Enter target directory path (e.g. C:\\Users\\Name\\Documents):");
-  if (targetDir) {
-    try {
+async function moveFile(filePath, card) {
+  try {
+    const suggestion = await window.deskAI.getSuggestion(filePath);
+    let targetDir = null;
+
+    if (suggestion) {
+      const choice = confirm(`Move to suggested folder: ${suggestion}?\n\n(Click Cancel to choose another folder)`);
+      if (choice) {
+        targetDir = suggestion;
+      } else {
+        targetDir = await window.deskAI.selectDirectory();
+      }
+    } else {
+      targetDir = await window.deskAI.selectDirectory();
+    }
+
+    if (targetDir) {
       const res = await window.deskAI.moveFile(filePath, targetDir);
       if (res && res.success) {
+        const newPath = res.newPath;
         addNotification(`Moved to ${targetDir}`);
         addMessage(`Successfully moved file to ${targetDir}`, 'ai');
-        refreshSuggestions();
+        
+        // Update card UI if provided
+        if (card) {
+          const pathDisplay = card.querySelector('.file-path');
+          if (pathDisplay) {
+            pathDisplay.innerText = newPath;
+            pathDisplay.title = newPath;
+          }
+          
+          // Update event listeners for the NEW path
+          card.querySelector('.open-btn').replaceWith(card.querySelector('.open-btn').cloneNode(true));
+          card.querySelector('.loc-btn').replaceWith(card.querySelector('.loc-btn').cloneNode(true));
+          card.querySelector('.delete-btn').replaceWith(card.querySelector('.delete-btn').cloneNode(true));
+          card.querySelector('.move-btn').replaceWith(card.querySelector('.move-btn').cloneNode(true));
+          
+          card.querySelector('.open-btn').addEventListener('click', () => openFile(newPath));
+          card.querySelector('.loc-btn').addEventListener('click', () => openLocation(newPath));
+          card.querySelector('.delete-btn').addEventListener('click', () => deleteFile(newPath));
+          card.querySelector('.move-btn').addEventListener('click', () => moveFile(newPath, card));
+        }
 
-        // Show Undo UI
+        refreshSuggestions();
+        loadActivityLog();
+
+        // Show Undo UI with 5s timer
         showUndoUI(true);
         const undoBtn = document.getElementById('undoBtn');
-        if (undoBtn) undoBtn.onclick = undoLast;
+        if (undoBtn) {
+          undoBtn.onclick = async () => {
+            if (undoTimerInterval) {
+              clearInterval(undoTimerInterval);
+              undoTimerInterval = null;
+            }
+            await undoLast();
+          };
+        }
       } else if (res && res.error) {
-        alert(`Move failed: ${res.error}`);
+        addMessage(`I couldn't move this file: ${res.error}`, 'ai');
       }
-    } catch (err) {
-      console.error("Move Error:", err);
-      alert("An error occurred during move.");
     }
+  } catch (err) {
+    console.error("Move Error:", err);
+    addMessage("I couldn't move this file.", 'ai');
   }
 }
 
@@ -1378,12 +1456,21 @@ function cancelAction() {
 }
 
 async function undoLast() {
-  document.getElementById('undoBtn').style.display = 'none';
+  if (undoTimerInterval) {
+    clearInterval(undoTimerInterval);
+    undoTimerInterval = null;
+  }
+  const undoBtn = document.getElementById('undoBtn');
+  if (undoBtn) {
+    undoBtn.style.display = 'none';
+    undoBtn.innerText = 'Undo';
+  }
   try {
     await window.deskAI.undoRename();
     addMessage("Last action undone.", 'ai');
     addNotification("Undo completed.");
     refreshSuggestions();
+    loadActivityLog();
   } catch (err) {
     addMessage("Undo failed.", 'ai');
   }
