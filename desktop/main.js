@@ -595,7 +595,16 @@ ipcMain.handle("file:rename", async (event, { filePath, newName }) => {
   try {
     if (!filePath || !newName) return { error: "Invalid parameters" };
     const oldDir = path.dirname(filePath);
-    const newPath = path.join(oldDir, newName);
+    const oldExt = path.extname(filePath);
+    const newExt = path.extname(newName);
+    
+    // If the user didn't provide an extension but the original file had one, keep it
+    let finalNewName = newName;
+    if (oldExt && !newExt && !newName.endsWith('.')) {
+      finalNewName = newName + oldExt;
+    }
+
+    const newPath = path.join(oldDir, finalNewName);
     
     if (fs.existsSync(newPath)) {
       return { error: "A file with that name already exists" };
@@ -607,7 +616,7 @@ ipcMain.handle("file:rename", async (event, { filePath, newName }) => {
     await runQuery(`
       INSERT INTO activity_log (type, old_name, new_name, file_path)
       VALUES (?, ?, ?, ?)
-    `, ["Rename", path.basename(filePath), newName, filePath]);
+    `, ["Rename", path.basename(filePath), finalNewName, filePath]);
 
     // Add to undo store
     setLastRenameActions([{
@@ -616,7 +625,7 @@ ipcMain.handle("file:rename", async (event, { filePath, newName }) => {
       to: newPath
     }]);
     
-    return { success: true, newPath };
+    return { success: true, newPath, newName: finalNewName };
   } catch (err) {
     console.error("File Rename Error:", err);
     return { error: err.message };

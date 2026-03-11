@@ -1083,7 +1083,16 @@ function createFileCard(file, type) {
 
   card.innerHTML = `
     <div class="file-info">
-      <div class="file-name" title="${fileName}">📄 ${fileName}</div>
+      <div class="file-name-container">
+        <div class="file-name" title="${fileName}">📄 ${fileName}</div>
+        <div class="rename-input-wrapper" style="display: none;">
+          <input type="text" class="rename-input" value="${fileName}">
+          <div class="rename-actions">
+            <button class="save-rename-btn mini">Save</button>
+            <button class="cancel-rename-btn mini">Cancel</button>
+          </div>
+        </div>
+      </div>
       <div class="file-path" title="${filePath}">${filePath}</div>
     </div>
     <div class="file-meta">
@@ -1102,11 +1111,141 @@ function createFileCard(file, type) {
   // Use event listeners instead of onclick for better security and path handling
   card.querySelector('.open-btn').addEventListener('click', () => openFile(filePath));
   card.querySelector('.loc-btn').addEventListener('click', () => openLocation(filePath));
-  card.querySelector('.rename-btn').addEventListener('click', () => renameFile(filePath));
+  
+  const renameBtn = card.querySelector('.rename-btn');
+  const nameDisplay = card.querySelector('.file-name');
+  const inputWrapper = card.querySelector('.rename-input-wrapper');
+  const renameInput = card.querySelector('.rename-input');
+  const saveBtn = card.querySelector('.save-rename-btn');
+  const cancelBtn = card.querySelector('.cancel-rename-btn');
+
+  renameBtn.addEventListener('click', () => {
+    nameDisplay.style.display = 'none';
+    inputWrapper.style.display = 'flex';
+    renameInput.focus();
+    // Select name without extension if possible
+    const lastDotIndex = fileName.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+      renameInput.setSelectionRange(0, lastDotIndex);
+    } else {
+      renameInput.select();
+    }
+  });
+
+  saveBtn.addEventListener('click', () => handleInlineRename(filePath, renameInput.value, card));
+  cancelBtn.addEventListener('click', () => {
+    inputWrapper.style.display = 'none';
+    nameDisplay.style.display = 'block';
+  });
+
+  renameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleInlineRename(filePath, renameInput.value, card);
+    if (e.key === 'Escape') {
+      inputWrapper.style.display = 'none';
+      nameDisplay.style.display = 'block';
+    }
+  });
+
   card.querySelector('.delete-btn').addEventListener('click', () => deleteFile(filePath));
   card.querySelector('.move-btn').addEventListener('click', () => moveFile(filePath));
 
   return card;
+}
+
+async function handleInlineRename(oldPath, newName, card) {
+  if (!newName || newName.trim() === '') {
+    alert("Filename cannot be empty.");
+    return;
+  }
+
+  // Basic invalid character check for Windows
+  const invalidChars = /[<>:"\/\\|?*]/g;
+  if (invalidChars.test(newName)) {
+    alert("Filename contains invalid characters (< > : \" / \\ | ? *)");
+    return;
+  }
+
+  const oldName = oldPath.split(/[\\\/]/).pop();
+  if (newName === oldName) {
+    const nameDisplay = card.querySelector('.file-name');
+    const inputWrapper = card.querySelector('.rename-input-wrapper');
+    inputWrapper.style.display = 'none';
+    nameDisplay.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await window.deskAI.renameFile(oldPath, newName);
+    if (res && res.success) {
+      const finalName = res.newName || newName;
+      const finalPath = res.newPath || oldPath;
+      
+      addNotification(`Renamed to ${finalName}`);
+      addMessage(`Successfully renamed file to "${finalName}"`, 'ai');
+      
+      // Update UI card
+      const nameDisplay = card.querySelector('.file-name');
+      const pathDisplay = card.querySelector('.file-path');
+      const inputWrapper = card.querySelector('.rename-input-wrapper');
+      const renameInput = card.querySelector('.rename-input');
+      
+      nameDisplay.innerText = `📄 ${finalName}`;
+      nameDisplay.title = finalName;
+      nameDisplay.style.display = 'block';
+      inputWrapper.style.display = 'none';
+      renameInput.value = finalName; // Update input value for next time
+      
+      pathDisplay.innerText = finalPath;
+      pathDisplay.title = finalPath;
+      
+      // Update the event listeners for other buttons to use the NEW path
+      card.querySelector('.open-btn').replaceWith(card.querySelector('.open-btn').cloneNode(true));
+      card.querySelector('.loc-btn').replaceWith(card.querySelector('.loc-btn').cloneNode(true));
+      card.querySelector('.delete-btn').replaceWith(card.querySelector('.delete-btn').cloneNode(true));
+      card.querySelector('.move-btn').replaceWith(card.querySelector('.move-btn').cloneNode(true));
+      
+      card.querySelector('.open-btn').addEventListener('click', () => openFile(finalPath));
+      card.querySelector('.loc-btn').addEventListener('click', () => openLocation(finalPath));
+      card.querySelector('.delete-btn').addEventListener('click', () => deleteFile(finalPath));
+      card.querySelector('.move-btn').addEventListener('click', () => moveFile(finalPath));
+      
+      // Also update the rename listener
+      const renameBtn = card.querySelector('.rename-btn');
+      const saveBtn = card.querySelector('.save-rename-btn');
+      
+      renameBtn.replaceWith(renameBtn.cloneNode(true));
+      const newRenameBtn = card.querySelector('.rename-btn');
+      newRenameBtn.addEventListener('click', () => {
+        nameDisplay.style.display = 'none';
+        inputWrapper.style.display = 'flex';
+        renameInput.focus();
+        const lastDotIndex = finalName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+          renameInput.setSelectionRange(0, lastDotIndex);
+        } else {
+          renameInput.select();
+        }
+      });
+      
+      saveBtn.replaceWith(saveBtn.cloneNode(true));
+      const newSaveBtn = card.querySelector('.save-rename-btn');
+      newSaveBtn.addEventListener('click', () => handleInlineRename(finalPath, renameInput.value, card));
+
+      refreshSuggestions();
+      loadActivityLog();
+      
+      // Show Undo UI
+      showUndoUI(true);
+      const undoBtn = document.getElementById('undoBtn');
+      if (undoBtn) undoBtn.onclick = undoLast;
+    } else if (res && res.error) {
+      addMessage(`I couldn't rename this file: ${res.error}`, 'ai');
+      alert(`Rename failed: ${res.error}`);
+    }
+  } catch (err) {
+    console.error("Rename Error:", err);
+    addMessage("I couldn't rename this file.", 'ai');
+  }
 }
 
 function openFile(path) { window.deskAI.openFile(path); }
@@ -1185,30 +1324,6 @@ async function deleteFile(path) {
   }
 }
 
-async function renameFile(filePath) {
-  const oldName = filePath.split(/[\\\/]/).pop();
-  const newName = prompt("Enter new name for the file:", oldName);
-  if (newName && newName !== oldName) {
-    try {
-      const res = await window.deskAI.renameFile(filePath, newName);
-      if (res && res.success) {
-        addNotification(`Renamed to ${newName}`);
-        addMessage(`Successfully renamed file to "${newName}"`, 'ai');
-        refreshSuggestions();
-        
-        // Show Undo UI
-        showUndoUI(true);
-        const undoBtn = document.getElementById('undoBtn');
-        if (undoBtn) undoBtn.onclick = undoLast;
-      } else if (res && res.error) {
-        alert(`Rename failed: ${res.error}`);
-      }
-    } catch (err) {
-      console.error("Rename Error:", err);
-      alert("An error occurred during rename.");
-    }
-  }
-}
 
 async function moveFile(filePath) {
   const targetDir = prompt("Enter target directory path (e.g. C:\\Users\\Name\\Documents):");

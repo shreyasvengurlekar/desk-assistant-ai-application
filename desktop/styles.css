@@ -875,7 +875,13 @@ button, .card-btn, .pill-btn, .send-btn, .btn-primary, .btn-secondary {
 .file-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+}
+
+.file-name-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .file-name {
@@ -883,6 +889,65 @@ button, .card-btn, .pill-btn, .send-btn, .btn-primary, .btn-secondary {
   font-size: 15px;
   color: var(--text);
   word-break: break-all;
+}
+
+.rename-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rename-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  font-weight: 500;
+}
+
+.rename-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.save-rename-btn {
+  background: var(--good);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.save-rename-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.cancel-rename-btn {
+  background: var(--panel-hover);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.cancel-rename-btn:hover {
+  background: var(--border);
 }
 
 .file-path {
